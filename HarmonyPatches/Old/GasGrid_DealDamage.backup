@@ -1,0 +1,100 @@
+﻿using RimWorld;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace GasExpansion
+{
+    public class GasGrid_DealDamage : GasGrid
+    {
+        private int tickToAdjacent = 0;
+        public override void Initialize()
+        {
+            base.Initialize();
+            try
+            {
+                GasProperties_DealDamage props = def.props.First(x => x is GasProperties_DealDamage) as GasProperties_DealDamage;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to get GasProperties_DealDamage fields: " + ex);
+                map.GetComponent<GasMapComponent>().gasGrids.Remove(this);
+            }
+
+        }
+        
+        public override void TickRare()
+        {
+            foreach (int ind in gases)
+            {
+
+                if (gasGrid[ind] < 30)
+                {
+                    continue;
+                }
+
+                List<Thing> things = IndexToCell(ind).GetThingList(map);
+                if (things.Count == 0) continue;
+                int num = (int)(Math.Min(gasGrid[ind], 256) / 51.2f);
+                if (num < 1)
+                {
+                    num = 1;
+                }
+                for (int i = things.Count - 1; i >= 0; i--)
+                {
+                    Pawn pawn = things[i] as Pawn;
+                    if (pawn != null)
+                    {
+                     //   BattleLogEntry_DamageTaken battleLogEntry_DamageTaken = new BattleLogEntry_DamageTaken(pawn, DefOfClass.GasExpansion_EventAcidCloud);
+                    //    Find.BattleLog.Add(battleLogEntry_DamageTaken);
+                        DamageInfo dinfo = new DamageInfo(DamageDefOf.Burn, num);
+                        dinfo.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
+                        if (pawn.RaceProps.IsMechanoid)
+                        {
+                            dinfo.SetIgnoreArmor(true);
+                        }
+                        things[i].TakeDamage(dinfo);
+                        //.AssociateWithLog(battleLogEntry_DamageTaken);
+                        if (pawn.apparel != null && pawn.apparel.WornApparel.TryRandomElement(out var result))
+                        {
+                            result.TakeDamage(dinfo);
+                        }
+                    }
+                    else
+                    {
+                        things[i].TakeDamage(new DamageInfo(DamageDefOf.Burn, num));
+                    }
+                }
+                tickToAdjacent++;
+                if (tickToAdjacent > 3)
+                {
+                    tickToAdjacent = 0;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        IntVec3 cell = IndexToCell(ind) + adjCells[i];
+                        int ind2 = CellToIndex(cell);
+                        if (ind2 > gasGrid.Length)
+                        {
+                            continue;
+                        }
+                        if (gasGrid[ind2] > 0) continue;
+
+                        Building edifice = map.edificeGrid[cell];
+                        if (edifice != null && edifice.def.Fillage == FillCategory.Full)
+                        {
+                            edifice.TakeDamage(new DamageInfo(DamageDefOf.Burn, num * 10));
+                        }
+                    }
+                }
+            }
+        }
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look(ref tickToAdjacent, "tickToAdjacent");
+        }
+    }
+}

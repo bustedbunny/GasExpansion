@@ -1,0 +1,26 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using HarmonyLib;
+using RimWorld;
+using Verse;
+using Verse.AI;
+
+namespace GasExpansion
+{
+
+  //  [HarmonyPatch(typeof(PathGrid), "CalculatedCostAt")]
+    public class CalculatedCostAtPostfix
+    {
+        public static void Postfix(ref int __result, Map ___map, IntVec3 c)
+        {
+            foreach (GasGrid grid in ___map.GetComponent<GasMapComponent>().badGrids)
+            {
+                __result += (int)(grid.gasGrid[grid.CellToIndex(c)] * 1000f);
+            }
+        }
+    }
+
+}

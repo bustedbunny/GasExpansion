@@ -1,0 +1,29 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Text;
+using System.Threading.Tasks;
+using HarmonyLib;
+using RimWorld;
+using Verse;
+using Verse.AI;
+
+namespace GasExpansion
+{
+
+  //  [HarmonyPatch(typeof(PathGrid), "WalkableFast", new Type[] {typeof(int)})]
+    public class WalkableFastPostfix
+    {
+        static void Postfix(ref bool __result, int index, Map ___map)
+        {
+            if (!__result)
+            {
+                return;
+            }
+            __result = ___map.GetComponent<GasMapComponent>().ShouldPathThrough(index);
+        }
+    }
+
+}

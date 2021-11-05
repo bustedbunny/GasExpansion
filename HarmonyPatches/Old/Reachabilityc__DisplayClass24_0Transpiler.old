@@ -1,0 +1,72 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Text;
+using System.Threading.Tasks;
+using HarmonyLib;
+using Verse;
+
+namespace GasExpansion
+{
+    /*
+    
+    [HarmonyPatch]
+    internal class Reachabilityc__DisplayClass24_0Transpiler
+    {
+        static MethodBase TargetMethod()
+        {
+            return AccessTools.Inner(typeof(Reachability), "<>c__DisplayClass24_0").GetMethod("<CheckCellBasedReachability>b__0", (BindingFlags.NonPublic | BindingFlags.Instance));
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
+        {
+            MethodInfo canReach = AccessTools.Method(typeof(Reachabilityc__DisplayClass24_0Transpiler), nameof(Reachabilityc__DisplayClass24_0Transpiler.CanReach));
+            var instance = AccessTools.Field(AccessTools.Inner(typeof(Reachability), "<>c__DisplayClass24_0"), "<>4__this");
+            FieldInfo instance2 =AccessTools.FindIncludingInnerTypes(typeof(Reachability), (type) => HarmonyLib.AccessTools.Field(type, "<>4__this"));
+            FieldInfo map = AccessTools.Field(typeof(Reachability), "map");
+            FieldInfo traverseParams = AccessTools.Field(AccessTools.Inner(typeof(Reachability), "<>c__DisplayClass24_0"), "traverseParams");
+            var codes = new List<CodeInstruction>(instructions);
+            for (var i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].opcode == OpCodes.Ldc_I4_1 && codes[i + 1].opcode == OpCodes.Ret)
+                {
+                    yield return new CodeInstruction(OpCodes.Ldarg_1).WithLabels(codes[i].labels);
+                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                    yield return new CodeInstruction(OpCodes.Ldfld, instance2);
+                    yield return new CodeInstruction(OpCodes.Ldfld, map);
+                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                    yield return new CodeInstruction(OpCodes.Ldfld, traverseParams);
+                    yield return new CodeInstruction(OpCodes.Call, canReach);
+                }
+                else
+                {
+                    yield return codes[i];
+                }
+                
+            }
+        }
+        private static bool CanReach(IntVec3 cell, Map map, TraverseParms parms)
+        {
+            if (map.GetComponent<GasMapComponent>().IsDangerCell(cell) && parms.maxDanger != Danger.Deadly)
+            {
+                Log.Message("returned unreachable");
+                return false;
+            }
+            return true;
+        }
+    }
+
+
+    [HarmonyPatch(typeof(Reachability), "CheckRegionBasedReachability")]
+    public class CheckRegionBasedReachabilityPatch
+    {
+        internal static void Prefix()
+        {
+            Log.Message("Region got called");
+        }
+    }
+    */
+}
+

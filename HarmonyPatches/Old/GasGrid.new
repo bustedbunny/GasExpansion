@@ -1,0 +1,331 @@
+﻿using RimWorld;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using Verse;
+
+namespace GasExpansion
+{
+    public class GasGrid : IExposable
+    {
+        public GasDef def;
+        public Map map;
+        public GasMapComponent parent;
+        public float[] gasGrid = new float[1];
+        public float[] transparencyGrid;
+        public HashSet<int> gases;
+        public List<float> savedGases;
+        public readonly HashSet<int> gasesToRemove = new HashSet<int>();
+        public readonly HashSet<int> gasesToAdd = new HashSet<int>();
+        private int currentTick;
+        public static readonly IntVec3[] adjCells = new IntVec3[4]
+        {
+            new IntVec3(0, 0, 1),
+            new IntVec3(1, 0, 0),
+            new IntVec3(0, 0, -1),
+            new IntVec3(-1, 0, 0)
+        };
+        /*
+        public GasGrid()
+        {
+        }
+        
+        public GasGrid(Map map, GasDef def)
+        {
+            this.def = def;
+            this.map = map;
+        }
+        */
+        public virtual void Initialize()
+        {
+            parent = map.GetComponent<GasMapComponent>();
+            gasGrid = new float[map.cellIndices.NumGridCells];
+            transparencyGrid = new float[map.cellIndices.NumGridCells];
+            gases = new HashSet<int>();
+        }
+
+        private int[] cache = new int[0];
+        private int iterations = 0;
+        private int curIteration = 0;
+        private int curStopInd = 0;
+
+        public virtual void Tick(int tick)
+        {
+            currentTick = tick;
+            if (def.needRoof)
+            {
+                for (int i = curIteration; i < curStopInd; i++)
+                {
+                    DiffuseRoofed(cache[i]);
+                    curIteration++;
+                }
+            }
+            else
+            {
+                for (int i = curIteration; i < curStopInd; i++)
+                {
+                    DiffuseUnroofed(cache[i]);
+                    curIteration++;
+                }
+            }
+            curStopInd += (int)Math.Ceiling(iterations / 15f);
+            curStopInd = Math.Min(curStopInd, cache.Length);
+            foreach (int i in gasesToRemove)
+            {
+                gases.Remove(i);
+                transparencyGrid[i] = 0;
+            }
+            foreach (int i in gasesToAdd) gases.Add(i);
+            gasesToRemove.Clear();
+            gasesToAdd.Clear();
+        }
+
+        private void DiffuseRoofed(int i)
+        {
+            if (!map.roofGrid.Roofed(i))
+            {
+                gasGrid[i] -= def.unroofedDiffusion * 0.0009766f;
+            }
+            gasGrid[i] -= def.constDiffusion * 0.0009766f;
+            if (gasGrid[i] <= 1)
+            {
+                gasGrid[i] = 0;
+                gasesToRemove.Add(i);
+            }
+            else Spread(i);
+        }
+        private void DiffuseUnroofed(int i)
+        {
+            gasGrid[i] -= def.constDiffusion * 0.0009766f;
+            if (gasGrid[i] <= 1)
+            {
+                gasGrid[i] = 0;
+                gasesToRemove.Add(i);
+            }
+            else Spread(i);
+        }
+
+        public virtual void TickThrottled()
+        {
+            iterations = gases.Count;
+            cache = new int[iterations];
+            gases.CopyTo(cache, 0);
+            curStopInd = (int)Math.Ceiling(iterations / 15f);
+            Log.Message("CurStopInd: " + curStopInd);
+            Log.Message(gases.Count.ToString());
+            curIteration = 0;
+        }
+        public void Spread(int ind)
+        {
+            float reserve = gasGrid[ind] / def.spreadSpeed;
+            for (int i = 0; i < 4; i++)
+            {
+                IntVec3 cell = IndexToCell(ind) + adjCells[i];
+                int ind2 = CellToIndex(cell);
+                int x = ind2 % map.Size.x;
+                if (ind2 > gasGrid.Length || x <= 0 || x >= map.Size.x - 1)
+                {
+                    gasGrid[ind] -= reserve;
+                    continue;
+                }
+                if (gasGrid[ind2] < gasGrid[ind] && !CanMoveTo(cell)) continue;
+
+                gasGrid[ind2] += reserve;
+                gasGrid[ind] -= reserve;
+                gasesToAdd.Add(ind2);
+            }
+        }
+        public void CreateGas(IntVec3 pos, float density)
+        {
+            if (!CanMoveTo(pos)) return;
+            int ind = map.cellIndices.CellToIndex(pos);
+            gasGrid[ind] += density;
+            transparencyGrid[ind] = gasGrid[ind];
+            gases.Add(ind);
+        }
+        public void MoveSomewhereElse(IntVec3 cell2)
+        {
+            if (CanMoveTo(cell2))
+            {
+                return;
+            }
+            int ind = CellToIndex(cell2);
+            if (!gases.Remove(ind)) return;
+            for (int i = 0; i < 4; i++)
+            {
+                IntVec3 cell = cell2 + adjCells[i];
+                int ind2 = CellToIndex(cell);
+                int x = ind2 % map.Size.x;
+                if (ind2 > gasGrid.Length || x == 0 || x == map.Size.x - 1) continue;
+                if (gasGrid[ind2] == 0 && !CanMoveTo(cell)) continue;
+                gasGrid[ind2] += gasGrid[ind];
+                gasesToAdd.Add(ind2);
+                break;
+            }
+            gasGrid[ind] = 0;
+        }
+
+        public virtual void TickRare()
+        {
+        }
+        public virtual void TickLong() { }
+        /*
+        public void DrawAt(IntVec3 cell)
+        {
+            int a = currentTick % 360;
+            Update();
+            int i = CellToIndex(cell);
+            Rand.PushState();
+            Rand.Seed = i;
+            float num = Math.Min(transparencyGrid[i]* 0.0019531f, 0.25f);
+            Material material = MaterialPool.MatFrom(new MaterialRequest(color: new Color(def.color.r, def.color.g, def.color.b, num), tex: Textures.tex, shader: ShaderDatabase.Transparent));
+            float angle = (float)(Rand.Range(0, 360) + a);
+            Vector3 pos = cell.ToVector3ShiftedWithAltitude(AltitudeLayer.Gas);
+            pos.x += Rand.Range(-0.025f, 0.025f);
+            pos.z += Rand.Range(-0.024f, 0.024f);
+            Vector3 s = new Vector3(4.0f, 0f, 4.0f);
+            Matrix4x4 matrix = default;
+            Matrix4x4 matrix2 = default;
+            matrix.SetTRS(pos, Quaternion.AngleAxis(angle, Vector3.up), Rand.Range(0.7f, 1.0f) * s);
+            matrix2.SetTRS(pos, Quaternion.AngleAxis(angle - 360, Vector3.down), Rand.Range(0.75f, 1.1f) * s);
+            Graphics.DrawMesh(MeshPool.plane10, matrix, material, 0);
+            Graphics.DrawMesh(MeshPool.plane10, matrix2, material, 0);
+            Rand.PopState();
+        }
+        
+        public void Update()
+        {
+            foreach (int i in gases)
+            {
+                if (transparencyGrid[i] <= gasGrid[i])
+                {
+                    transparencyGrid[i] += Math.Min(((gasGrid[i] - transparencyGrid[i]) / 4), 2f);
+                    if (transparencyGrid[i] > 512f)
+                    {
+                        transparencyGrid[i] = 512f;
+                    }
+                }
+                else
+                {
+                    transparencyGrid[i] -= Math.Min(((transparencyGrid[i] - gasGrid[i]) / 4), 2f);
+                }
+            }
+        }
+        */
+        public void Draw()
+        {
+            CellRect currentViewRect = Find.CameraDriver.CurrentViewRect;
+            //    currentViewRect.ClipInsideMap(map);
+            //  currentViewRect.ExpandedBy(1);
+            currentViewRect.minX -= 17;
+            currentViewRect.minZ -= 17;
+            int a = currentTick % 360;
+            foreach (int i in gases)
+            {
+                if (transparencyGrid[i] <= gasGrid[i])
+                {
+                    transparencyGrid[i] += Math.Min(((gasGrid[i] - transparencyGrid[i]) / 4), 2f);
+                    if (transparencyGrid[i] > 512f)
+                    {
+                        transparencyGrid[i] = 512f;
+                    }
+                }
+                else
+                {
+                    transparencyGrid[i] -= Math.Min(((transparencyGrid[i] - gasGrid[i]) / 4), 2f);
+                }
+                IntVec3 p = IndexToCell(i);
+                if (!currentViewRect.Contains(p))
+                {
+                    continue;
+                }
+                Rand.PushState();
+                Rand.Seed = i;
+                float num = Math.Min(transparencyGrid[i]* 0.0019531f, 0.25f);
+                Material material = MaterialPool.MatFrom(new MaterialRequest(color: new Color(def.color.r, def.color.g, def.color.b, num), tex: Textures.tex, shader: ShaderDatabase.Transparent));
+                float angle = (float)(Rand.Range(0, 360) + a);
+                Vector3 pos = p.ToVector3ShiftedWithAltitude(AltitudeLayer.Gas);
+                pos.x += Rand.Range(-0.025f, 0.025f);
+                pos.z += Rand.Range(-0.024f, 0.024f);
+                Vector3 s = new Vector3(4.0f, 0f, 4.0f);
+                Matrix4x4 matrix = default;
+                Matrix4x4 matrix2 = default;
+                matrix.SetTRS(pos, Quaternion.AngleAxis(angle, Vector3.up), Rand.Range(0.7f, 1.0f) * s);
+                matrix2.SetTRS(pos, Quaternion.AngleAxis(angle - 360, Vector3.down), Rand.Range(0.75f, 1.1f) * s);
+                Graphics.DrawMesh(MeshPool.plane10, matrix, material, 0);
+                Graphics.DrawMesh(MeshPool.plane10, matrix2, material, 0);
+                Rand.PopState();
+            }
+        }
+        public int CellToIndex(IntVec3 c)
+        {
+            return c.z * map.Size.x + c.x;
+        }
+        public IntVec3 IndexToCell(int ind)
+        {
+            return new IntVec3(ind % map.Size.x, 0, ind / map.Size.x);
+        }
+        public float DensityInCell(IntVec3 pos)
+        {
+            return gasGrid[CellToIndex(pos)];
+        }
+        public float DensityInCell(int ind)
+        {
+            return gasGrid[ind];
+        }
+        private bool CanMoveTo(IntVec3 cell)
+        {
+            Building edifice = map.edificeGrid[cell];
+            if (edifice == null || edifice.def.Fillage != FillCategory.Full)
+            {
+                return true;
+            }
+            if (edifice is Building_Door door && door.Open)
+            {
+                return true;
+            }
+            if (edifice is Building_Vent vent && (vent?.TryGetComp<CompFlickable>().SwitchIsOn ?? false))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public virtual void ExposeData()
+        {
+
+            Scribe_References.Look(ref map, "map");
+            Scribe_Defs.Look(ref def, "def");
+            Scribe_Collections.Look(ref gases, "gases");
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                savedGases = new List<float>(gases.Count);
+                for (int i = 0; i < gases.Count; i++)
+                {
+                    savedGases.Add(gasGrid[gases.ElementAt(i)]);
+                }
+            }
+            Scribe_Collections.Look(ref savedGases, "savedGases");
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                gasGrid = new float[map.cellIndices.NumGridCells];
+                for (int i = 0; i < gases.Count; i++)
+                {
+                    gasGrid[gases.ElementAt(i)] = savedGases.ElementAt(i);
+                }
+                transparencyGrid = (float[])gasGrid.Clone();
+                for (int i = 0; i < transparencyGrid.Length; i++)
+                {
+                    if (transparencyGrid[i] > 512)
+                    {
+                        transparencyGrid[i] = 512;
+                    }
+                }
+            }
+
+
+
+        }
+    }
+}

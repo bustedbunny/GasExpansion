@@ -1,0 +1,59 @@
+﻿using HarmonyLib;
+using RimWorld;
+using Verse;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Reflection.Emit;
+using System.Reflection;
+
+namespace GasExpansion
+{
+
+    [HarmonyPatch(typeof(MapDrawer), "DrawMapMesh")]
+    public class DrawMapMeshTranspiler
+    {
+        private static readonly FieldInfo map = AccessTools.Field(typeof(MapDrawer), nameof(MapDrawer.map));
+        private static readonly MethodInfo mapComp = AccessTools.Method(typeof(DrawMapMeshTranspiler), nameof(DrawMapMeshTranspiler.MapComp));
+        private static readonly MethodInfo drawAt = AccessTools.Method(typeof(GasMapComponent), nameof(GasMapComponent.DrawAt));
+
+        private static GasMapComponent MapComp(Map map)
+        {
+            return map.GetComponent<GasMapComponent>();
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldfld, map);
+            yield return new CodeInstruction(OpCodes.Call, mapComp);
+            il.DeclareLocal(typeof(GasMapComponent));
+            yield return new CodeInstruction(OpCodes.Stloc_S, 5);
+
+
+
+            for (var i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].opcode == OpCodes.Ceq)
+                {
+                    yield return codes[i];
+                    yield return codes[i + 1];
+                    i += 2;
+                    yield return new CodeInstruction(OpCodes.Ldloc_S, 5);
+                    yield return new CodeInstruction(OpCodes.Ldloc_3);
+
+                    yield return new CodeInstruction(OpCodes.Call, drawAt);
+
+                }
+
+
+                yield return codes[i];
+            }
+        }
+    }
+
+
+}

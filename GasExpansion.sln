@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31717.71
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GasExpansion", "GasExpansion.csproj", "{D5F260A2-7C01-4715-87F1-92E6149FB100}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GasExpansion_CE", "..\GasExpansion_CE\GasExpansion_CE.csproj", "{0FCC5B90-3D11-4EC5-BEB1-EB9A4E724F2A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D5F260A2-7C01-4715-87F1-92E6149FB100}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5F260A2-7C01-4715-87F1-92E6149FB100}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5F260A2-7C01-4715-87F1-92E6149FB100}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5F260A2-7C01-4715-87F1-92E6149FB100}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FCC5B90-3D11-4EC5-BEB1-EB9A4E724F2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FCC5B90-3D11-4EC5-BEB1-EB9A4E724F2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FCC5B90-3D11-4EC5-BEB1-EB9A4E724F2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FCC5B90-3D11-4EC5-BEB1-EB9A4E724F2A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {56502D03-5871-47B8-8437-210D3A537461}
+	EndGlobalSection
+EndGlobal

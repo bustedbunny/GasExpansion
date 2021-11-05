@@ -1,0 +1,36 @@
+﻿using HarmonyLib;
+using RimWorld;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace GasExpansion
+{
+
+
+    [HarmonyPatch(typeof(Building), "DeSpawn")]
+    public class DeSpawnPatch
+    {
+
+        public static void Prefix(Building __instance, out Map __state)
+        {
+
+            __state = __instance.Map;
+
+        }
+        public static void Postfix(Building __instance, Map __state)
+        {
+
+            GasMapComponent comp = __state.GetComponent<GasMapComponent>();
+            if (comp != null)
+            {
+                int ind = __state.cellIndices.CellToIndex(__instance.Position);
+                comp.spreadGrid[ind] = !comp.CanMoveTo(ind);
+            }
+
+        }
+    }
+}

@@ -1,0 +1,27 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Text;
+using System.Threading.Tasks;
+using HarmonyLib;
+using RimWorld;
+using Verse;
+using Verse.AI;
+
+namespace GasExpansion
+{
+
+  //  [HarmonyPatch(typeof(PathGrid), "PerceivedPathCostAt")]
+    public class PerceivedPathCostAtPatch
+    {
+        private static readonly MethodInfo pathCostGas;
+        static void Postfix(ref int __result, IntVec3 loc, Map ___map)
+        {
+            __result += ___map.GetComponent<GasMapComponent>().PathCostAt(loc);
+            Log.Message($"{__result}");
+        }
+    }
+
+}
