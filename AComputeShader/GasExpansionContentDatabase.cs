@@ -45,8 +45,5 @@ namespace GasExpansion
             }
             return computeShader;
         }
-
-
-
     }
 }

@@ -62,6 +62,7 @@
     <Compile Include="Gas\GasProperties\GasProperties_DealDamage.cs" />
     <Compile Include="Gas\GridIndexUtility.cs" />
     <Compile Include="Gas\Pipe\CardinalConnector.cs" />
+    <Compile Include="Gas\Pipe\Node.cs" />
     <Compile Include="Gas\Pipe\TripleConnector.cs" />
     <Compile Include="Gas\Pipe\Segment.cs" />
     <Compile Include="HarmonyPatches\ConcealingSmoke\BestAttackTargetTranspiler.cs" />

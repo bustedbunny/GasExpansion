@@ -13,43 +13,14 @@ namespace GasExpansion
         public Segment oneSegment;
         public float currentPressure;
 
-        private const float maxPressure = 1000f;
-        private static readonly IntVec3[] offsets =
+        protected const float maxPressure = 1000f;
+        protected static readonly IntVec3[] offsets =
 {
             new IntVec3(0, 0,1),
             new IntVec3(0, 0,-1),
             new IntVec3(-1, 0,0),
             new IntVec3(1, 0,0)
         };
-        public virtual float Spread(Segment from, float pressure)
-        {
-            Segment target = (from == zeroSegment) ? oneSegment : zeroSegment;
-            float excessivePressure = Pressure(target, pressure);
-            return excessivePressure;
-        }
-        protected float Pressure(Segment to, float pressure)
-        {
-            float excessivePressure = 0;
-            if (to != null)
-            {
-                currentPressure += to.Spread(this, pressure);
-                if (currentPressure > maxPressure)
-                {
-                    excessivePressure = (maxPressure - currentPressure) * -1f;
-                    currentPressure = maxPressure;
-                }
-            }
-            else
-            {
-                currentPressure += pressure;
-                if (currentPressure > maxPressure)
-                {
-                    excessivePressure = (maxPressure - currentPressure) * -1f;
-                    currentPressure = maxPressure;
-                }
-            }
-            return excessivePressure;
-        }
 
         public void UpdateConnections()
         {
@@ -75,7 +46,7 @@ namespace GasExpansion
             }
         }
 
-        private Segment GetFirstPipe(IntVec3 cell)
+        protected Segment GetFirstPipe(IntVec3 cell)
         {
             foreach (Thing item in cell.GetThingList(Map))
             {

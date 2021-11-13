@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using UnityEngine;
 using Verse;
+using System.Diagnostics;
 
 namespace GasExpansion
 {
@@ -137,6 +139,7 @@ namespace GasExpansion
 
         public override void MapComponentTick()
         {
+
             int tick = Find.TickManager.TicksGame;
             for (int i = 0; i < gasGrids.Count; i++)
             {
@@ -146,11 +149,19 @@ namespace GasExpansion
 
             if (tick % 15 == 0)
             {
+                Parallel.ForEach(gasGrids, grid =>
+                {
+                    grid.TickThrottled();
+                });
 
-                for (int i = 0; i < gasGrids.Count; i++)
+                /*
+
+
+                                for (int i = 0; i < gasGrids.Count; i++)
                 {
                     gasGrids[i].TickThrottled();
                 }
+                */
             }
             if (tick % 250 == 0)
             {
@@ -321,11 +332,15 @@ namespace GasExpansion
 
         public override void MapComponentUpdate()
         {
+            CellRect currentViewRect = Find.CameraDriver.CurrentViewRect;
+            currentViewRect.minX -= 17;
+            currentViewRect.minZ -= 17;
 
             for (int i = 0; i < gasGrids.Count; i++)
             {
-                gasGrids[i].Draw();
+                gasGrids[i].Draw(currentViewRect, Find.TickManager.TicksGame);
             }
+
 
         }
 #if DEBUG

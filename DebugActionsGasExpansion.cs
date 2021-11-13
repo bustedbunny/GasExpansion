@@ -27,7 +27,7 @@ namespace GasExpansion
                 {
                     if (item is Segment segment)
                     {
-                        segment.Spread(null, 50);
+               //         segment.Spread(null, 50);
                     }
                 }
             }));

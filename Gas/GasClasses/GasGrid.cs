@@ -33,43 +33,9 @@ namespace GasExpansion
         {
             currentTick = tick;
         }
-        /*
-        int shaderInd;
-        ComputeShader _shader;
-        float[] outputGrid;
-        ComputeBuffer gridBuffer;
-        */
+
         public virtual void TickThrottled()
         {
-            /*
-            _shader = GasExpansionContentDatabase.GasGridCompute;
-            if (_shader == null)
-            {
-                Log.Error("shader is null");
-            }
-            _shader.SetInt("gridSize", gasGrid.Length);
-            _shader.SetInt("mapSizeX", map.Size.x);
-            _shader.SetFloat("spreadSpeed", def.spreadSpeed);
-            gridBuffer = new ComputeBuffer(gasGrid.Length, 4);
-            gridBuffer.SetData(gasGrid);
-            shaderInd = _shader.FindKernel("SpreadGas");
-            _shader.SetBuffer(shaderInd, "gasGrid", gridBuffer);
-            _shader.Dispatch(shaderInd, (int)(gasGrid.Length / 32), 1, 1);
-            gridBuffer.GetData(gasGrid);
-            for (int i = 0; i < gasGrid.Length; i++)
-            {
-                if (gasGrid[i] > 0)
-                {
-                    gases.Add(i);
-                }
-                else
-                {
-                    gases.Remove(i);
-                }
-            }
-           
-            return;
-            */
 
             if (def.needRoof)
             {
@@ -375,13 +341,32 @@ namespace GasExpansion
             return false;
         }
 
-        public void Draw()
+        private int[] signGrid;
+        private int[] angleGrid;
+        private float[] xGrid;
+        private float[] zGrid;
+        private void GenerateRandGrids()
+        {
+            int numCells = map.cellIndices.NumGridCells;
+            signGrid = new int[numCells];
+            angleGrid = new int[numCells];
+            xGrid = new float[numCells];
+            zGrid = new float[numCells];
+
+            for (int i = 0; i < numCells; i++)
+            {
+                Rand.PushState();
+                Rand.Seed = i;
+                signGrid[i] = Rand.Sign;
+                angleGrid[i] = Rand.Range(0, 360);
+                xGrid[i] += Rand.Range(-0.025f, 0.025f);
+                zGrid[i] += Rand.Range(-0.024f, 0.024f);
+                Rand.PopState();
+            }
+        }
+        public void Draw(CellRect currentViewRect, int curTick)
         {
             if (gases.Count == 0) return;
-            CellRect currentViewRect = Find.CameraDriver.CurrentViewRect;
-            currentViewRect.minX -= 17;
-            currentViewRect.minZ -= 17;
-            int curTick = currentTick % 360;
             if (material == null)
             {
                 material = MaterialPool.MatFrom(new MaterialRequest(color: new Color(def.color.r, def.color.g, def.color.b, 0), tex: Textures.tex, shader: ShaderDatabase.TransparentPostLight));
@@ -402,18 +387,15 @@ namespace GasExpansion
                 {
                     continue;
                 }
-                Rand.PushState();
-                Rand.Seed = i;
                 float num = Math.Min(transparencyGrid[i] / 512f, 0.3f);
                 block.SetColor(colorID, new Color(def.color.r, def.color.g, def.color.b, num));
-                float angle = (float)(Rand.Range(0, 360) + curTick * Rand.Sign);
+                float angle = (float)(angleGrid[i] + curTick * signGrid[i]);
                 Vector3 pos = p.ToVector3ShiftedWithAltitude(AltitudeLayer.Gas);
                 pos.y += layer / 1000f;
-                pos.x += Rand.Range(-0.025f, 0.025f);
-                pos.z += Rand.Range(-0.024f, 0.024f);
+                pos.x += xGrid[i];
+                pos.z += zGrid[i];
                 matrix.SetTRS(pos, Quaternion.AngleAxis(angle, Vector3.up), drawSize);
                 Graphics.DrawMesh(MeshPool.plane10, matrix, material, 0, null, 0, block, false, false, true);
-                Rand.PopState();
             }
         }
         private int colorID;
@@ -429,6 +411,7 @@ namespace GasExpansion
             drawSize = new(4f, 0f, 4f);
             matrix = default;
             parent = map.GetComponent<GasMapComponent>();
+            GenerateRandGrids();
 
         }
         public virtual void ExposeData()
