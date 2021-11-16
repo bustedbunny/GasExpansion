@@ -28,15 +28,13 @@ namespace GasExpansion
             transparencyGrid = new float[map.cellIndices.NumGridCells];
             gases = new HashSet<int>();
         }
-        private int currentTick;
-        public virtual void Tick(int tick)
+
+        public virtual void Tick()
         {
-            currentTick = tick;
         }
 
-        public virtual void TickThrottled()
+        public virtual void TickThreaded()
         {
-
             if (def.needRoof)
             {
                 foreach (int i in gases)
@@ -129,9 +127,10 @@ namespace GasExpansion
         }
         private void SpreadOutside(int ind)
         {
+            float wallOffset = 1;
             for (int i = 0; i < 4; i++)
             {
-                float reserve = gasGrid[ind] / def.spreadSpeed * parent.windOffset[i];
+                float reserve = gasGrid[ind] / def.spreadSpeed * parent.windOffset[i] * wallOffset;
                 int ind2;
                 switch (i)
                 {
@@ -168,7 +167,11 @@ namespace GasExpansion
                         ind2 = ind - 1;
                         break;
                 }
-                if (gasGrid[ind2] == 0 && !CanMoveTo(ind2)) continue;
+                if (gasGrid[ind2] == 0 && !CanMoveTo(ind2))
+                {
+                    wallOffset += 0.25f;
+                    continue;
+                }
                 gasGrid[ind2] += reserve;
                 gasGrid[ind] -= reserve;
                 gasesToAdd.Add(ind2);
@@ -181,7 +184,21 @@ namespace GasExpansion
             {
                 return true;
             }
-            return room.OpenRoofCount >= room.CellCount * 0.25;
+            if (room.cachedOpenRoofCount == -1)
+            {
+                lock (room)
+                {
+                    _ = room.OpenRoofCount;
+                }
+            }
+            if (room.cachedCellCount == -1)
+            {
+                lock (room)
+                {
+                    _ = room.CellCount;
+                }
+            }
+            return room.cachedOpenRoofCount >= room.cachedCellCount * 0.25;
         }
         public void CreateGas(IntVec3 pos, float density)
         {
@@ -356,7 +373,7 @@ namespace GasExpansion
             for (int i = 0; i < numCells; i++)
             {
                 Rand.PushState();
-                Rand.Seed = i;
+                Rand.Seed = i + layer;
                 signGrid[i] = Rand.Sign;
                 angleGrid[i] = Rand.Range(0, 360);
                 xGrid[i] += Rand.Range(-0.025f, 0.025f);
@@ -364,13 +381,8 @@ namespace GasExpansion
                 Rand.PopState();
             }
         }
-        public void Draw(CellRect currentViewRect, int curTick)
+        public void UpdateTransparency()
         {
-            if (gases.Count == 0) return;
-            if (material == null)
-            {
-                material = MaterialPool.MatFrom(new MaterialRequest(color: new Color(def.color.r, def.color.g, def.color.b, 0), tex: Textures.tex, shader: ShaderDatabase.TransparentPostLight));
-            }
             foreach (int i in gases)
             {
                 if (transparencyGrid[i] < gasGrid[i])
@@ -381,26 +393,30 @@ namespace GasExpansion
                 {
                     transparencyGrid[i] -= Mathf.Clamp(transparencyGrid[i] - gasGrid[i], 0.5f, 2f);
                 }
-                if (transparencyGrid[i] < 10) continue;
+            }
+        }
+
+        public void Draw(CellRect currentViewRect, Material material, int curTick, float minGas)
+        {
+            foreach (int i in gases)
+            {
+                if (transparencyGrid[i] < minGas) continue;
                 IntVec3 p = IndexToCell(i);
                 if (!currentViewRect.Contains(p))
                 {
                     continue;
                 }
-                float num = Math.Min(transparencyGrid[i] / 512f, 0.3f);
-                block.SetColor(colorID, new Color(def.color.r, def.color.g, def.color.b, num));
-                float angle = (float)(angleGrid[i] + curTick * signGrid[i]);
+                block.SetColor(colorID, new Color(def.color.r, def.color.g, def.color.b, Math.Min(transparencyGrid[i] / 1707, 0.3f)));
                 Vector3 pos = p.ToVector3ShiftedWithAltitude(AltitudeLayer.Gas);
                 pos.y += layer / 1000f;
                 pos.x += xGrid[i];
                 pos.z += zGrid[i];
-                matrix.SetTRS(pos, Quaternion.AngleAxis(angle, Vector3.up), drawSize);
+                matrix.SetTRS(pos, Quaternion.AngleAxis((float)(angleGrid[i] + curTick * signGrid[i]), Vector3.up), drawSize);
                 Graphics.DrawMesh(MeshPool.plane10, matrix, material, 0, null, 0, block, false, false, true);
             }
         }
         private int colorID;
-        private MaterialPropertyBlock block;
-        private Material material;
+        internal MaterialPropertyBlock block;
         private Vector3 drawSize;
         private Matrix4x4 matrix;
         public virtual void PostLoad()

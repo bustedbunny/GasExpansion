@@ -61,55 +61,58 @@ namespace GasExpansion
                 {
                     continue;
                 }
-
-                List<Thing> pawns = map.thingGrid.ThingsListAtFast(ind);
-                for (int i = 0; i < pawns.Count; i++)
+                lock (map.thingGrid.ThingsListAtFast(ind))
                 {
-                    if (pawns[i] is Pawn pawn)
+                    List<Thing> pawns = map.thingGrid.ThingsListAtFast(ind);
+                    for (int i = 0; i < pawns.Count; i++)
                     {
-                        if (pawn.RaceProps.IsMechanoid != affectsMechanoids)
+                        if (pawns[i] is Pawn pawn)
                         {
-                            continue;
-                        }
-                        if (pawn.health == null)
-                        {
-                            continue;
-                        }
-
-                        float num = pawn.GetStatValue(StatDefOf.ToxicSensitivity);
-
-                        if (num > 1f)
-                        {
-                            continue;
-                        }
-                        num = 0;
-                        if (pawn.apparel != null)
-                        {
-                            foreach (Apparel apparel in pawn.apparel.WornApparel)
+                            if (pawn.RaceProps.IsMechanoid != affectsMechanoids)
                             {
-                                if (apparel.def.apparel.bodyPartGroups.Contains(DefOfClass.Mouth))
-                                {
-                                    num += apparel.GetStatValue(StatDefOf.ToxicSensitivity);
-                                }
+                                continue;
                             }
+                            if (pawn.health == null)
+                            {
+                                continue;
+                            }
+
+                            float num = pawn.GetStatValue(StatDefOf.ToxicSensitivity);
+
                             if (num > 1f)
                             {
                                 continue;
                             }
-                        }
-                        num = Math.Min(gasGrid[ind] / severityDivider, severityCap) * Math.Max(1 - num, 0);
-                        HealthUtility.AdjustSeverity(pawn, hediff, num);
-                        if (num > severityCap / 2 && !pawn.Downed &&
-                            (pawn.CurJob == null || pawn.CurJob.def.checkOverrideOnDamage == CheckJobOverrideOnDamageMode.Never ||
-                            (!pawn.CurJob.playerForced && !pawn.Drafted && pawn.CurJobDef != JobDefOf.Flee)) && !pawn.Dead &&
-                            RCellFinder.TryFindDirectFleeDestination(pawn.Position, 9f, pawn, out var newPos))
-                        {
-                            Job job = JobMaker.MakeJob(JobDefOf.Goto, newPos);
-                            job.locomotionUrgency = LocomotionUrgency.Sprint;
-                            pawn.jobs.StartJob(job, JobCondition.InterruptForced);
+                            num = 0;
+                            if (pawn.apparel != null)
+                            {
+                                foreach (Apparel apparel in pawn.apparel.WornApparel)
+                                {
+                                    if (apparel.def.apparel.bodyPartGroups.Contains(DefOfClass.Mouth))
+                                    {
+                                        num += apparel.GetStatValue(StatDefOf.ToxicSensitivity);
+                                    }
+                                }
+                                if (num > 1f)
+                                {
+                                    continue;
+                                }
+                            }
+                            num = Math.Min(gasGrid[ind] / severityDivider, severityCap) * Math.Max(1 - num, 0);
+                            HealthUtility.AdjustSeverity(pawn, hediff, num);
+                            if (num > severityCap / 2 && !pawn.Downed &&
+                                (pawn.CurJob == null || pawn.CurJob.def.checkOverrideOnDamage == CheckJobOverrideOnDamageMode.Never ||
+                                (!pawn.CurJob.playerForced && !pawn.Drafted && pawn.CurJobDef != JobDefOf.Flee)) && !pawn.Dead &&
+                                RCellFinder.TryFindDirectFleeDestination(pawn.Position, 9f, pawn, out var newPos))
+                            {
+                                Job job = JobMaker.MakeJob(JobDefOf.Goto, newPos);
+                                job.locomotionUrgency = LocomotionUrgency.Sprint;
+                                pawn.jobs.StartJob(job, JobCondition.InterruptForced);
+                            }
                         }
                     }
                 }
+                
             }
         }
 
