@@ -114,7 +114,7 @@ namespace GasExpansion
             Text.Anchor = TextAnchor.MiddleRight;
             rect.width -= 15f;
             Text.Font = GameFont.Small;
-            Widgets.Label(rect, WindStrengthText + WindDirectionText + " " + Math.Round(windDirection).ToString() + " " + windDirectionTarget.ToString());
+            Widgets.Label(rect, WindStrengthText + WindDirectionText);
             TooltipHandler.TipRegion(rect, "GE_Wind_Tooltip".Translate());
             Text.Anchor = TextAnchor.UpperLeft;
             yPos -= num2;
@@ -128,7 +128,12 @@ namespace GasExpansion
                 {
                     return "";
                 }
-                int num = Mathf.Clamp(Mathf.RoundToInt(windDirection / 45f), 0, 7);
+                float direction = windDirection + 22.5f;
+                if (direction > 360)
+                {
+                    direction -= 360;
+                }
+                int num = (int)(direction / 45f);
                 return ", " + ("GE_Wind_Direction_" + windDirections[num]).Translate();
             }
         }
@@ -136,33 +141,21 @@ namespace GasExpansion
         private int BeaufortScale => Mathf.FloorToInt(WindStrength);
         private string WindStrengthText => ("GE_Wind_Beaufort" + BeaufortScale).Translate();
 
-
         public override void MapComponentTick()
         {
-
+#if DEBUG
+            Stopwatch sw = Stopwatch.StartNew();
+#endif
             int tick = Find.TickManager.TicksGame;
-            for (int i = 0; i < gasGrids.Count; i++)
+            Parallel.ForEach(gasGrids, gasGrid =>
             {
-                gasGrids[i].Tick(tick);
-
-            }
-
-            if (tick % 15 == 0)
-            {
-                Parallel.ForEach(gasGrids, grid =>
+                gasGrid.Tick();
+                gasGrid.UpdateTransparency();
+                if (tick % 15 == 0)
                 {
-                    grid.TickThrottled();
-                });
-
-                /*
-
-
-                                for (int i = 0; i < gasGrids.Count; i++)
-                {
-                    gasGrids[i].TickThrottled();
+                    gasGrid.TickThreaded();
                 }
-                */
-            }
+            });
             if (tick % 250 == 0)
             {
                 for (int i = 0; i < gasGrids.Count; i++)
@@ -172,19 +165,19 @@ namespace GasExpansion
                 CachePathGrid();
                 UpdateWind();
                 CalculateWindOffsets();
-
-
                 if (tick % 2000 == 0)
                 {
                     for (int i = 0; i < gasGrids.Count; i++)
                     {
                         gasGrids[i].TickLong();
-                        Log.Message(gasGrids[i].layer.ToString() + " " + gasGrids[i].def.LabelCap);
                     }
                 }
             }
+#if DEBUG
+            sw.Stop();
+            Log.Message(sw.Elapsed.ToString());
+#endif
         }
-
 
 
         public bool IsDangerCell(IntVec3 cell)
@@ -330,20 +323,26 @@ namespace GasExpansion
             return num;
         }
 
+        public Material material;
         public override void MapComponentUpdate()
         {
-            CellRect currentViewRect = Find.CameraDriver.CurrentViewRect;
-            currentViewRect.minX -= 17;
-            currentViewRect.minZ -= 17;
-
+            if (material == null)
+            {
+                material = MaterialPool.MatFrom(new MaterialRequest(color: new Color(0, 0, 0, 0), tex: Textures.tex, shader: ShaderDatabase.TransparentPostLight));
+            }
+            CameraDriver camera = Find.CameraDriver;
+            CellRect currentViewRect = camera.CurrentViewRect;
+            currentViewRect.ClipInsideMap(map);
+            currentViewRect.ExpandedBy(1);
+            float minGas = camera.rootSize * 2f;
+            int angle = (Find.TickManager.TicksGame % 720) / 2;
             for (int i = 0; i < gasGrids.Count; i++)
             {
-                gasGrids[i].Draw(currentViewRect, Find.TickManager.TicksGame);
+                gasGrids[i].Draw(currentViewRect, material, angle, minGas);
             }
-
-
         }
-#if DEBUG
+
+        /*
         public override void MapComponentOnGUI()
         {
             if (!Prefs.DevMode)
@@ -355,10 +354,8 @@ namespace GasExpansion
             currentViewRect.ExpandedBy(1);
             foreach (GasGrid grid in gasGrids)
             {
-
                 foreach (int i in grid.gases)
                 {
-
                     IntVec3 pos = grid.IndexToCell(i);
                     if (!currentViewRect.Contains(pos))
                     {
@@ -368,7 +365,7 @@ namespace GasExpansion
                 }
             }
         }
-#endif
+        */
 
         public bool CanMoveTo(int ind)
         {

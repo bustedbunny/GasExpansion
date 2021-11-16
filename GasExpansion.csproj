@@ -111,6 +111,7 @@
     <Publicize Include="Assembly-CSharp:Verse.RegionGrid.regionGrid" />
     <Publicize Include="Assembly-CSharp:Verse.Room.cachedOpenRoofCount" />
     <Publicize Include="Assembly-CSharp:Verse.Room.cachedCellCount" />
+    <Publicize Include="Assembly-CSharp:Verse.CameraDriver.rootSize" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Krafs.Publicizer">
