@@ -36,7 +36,7 @@ namespace GasExpansion
         }
         private static bool LosValidator(IntVec3 cell, Map map)
         {
-            IEnumerable<GasGrid> list = map.GetComponent<GasMapComponent>().gasGrids.Where(x => x.def.blockVision);
+            IEnumerable<GasGrid> list = map.GetComponent<GasMapComponent>().grid.gasGrids.Where(x => x.def.blockVision);
             foreach (GasGrid grid in list)
             {
                 if (grid.DensityInCell(cell) < 100)

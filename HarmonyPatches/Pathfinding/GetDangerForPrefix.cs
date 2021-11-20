@@ -18,7 +18,7 @@ namespace GasExpansion
 
         public static bool Prefix(ref Danger __result, IntVec3 c, Map map)
         {
-            if (map.GetComponent<GasMapComponent>().IsDangerCell(c))
+            if (map.GetComponent<GasMapComponent>().grid.pathTracker.IsDangerCell(c))
             {
                 __result = Danger.Deadly;
                 return false;

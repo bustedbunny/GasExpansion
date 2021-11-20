@@ -54,7 +54,7 @@ namespace GasExpansion
             int num = 0;
             foreach (IntVec3 cell in cells)
             {
-                if (comp.ShouldPathThrough(cell, pawn))
+                if (comp.grid.pathTracker.ShouldPathThrough(cell, pawn))
                 {
                     num++;
                 }

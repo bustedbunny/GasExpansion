@@ -53,7 +53,7 @@ namespace GasExpansion
             {
                 float rectY = num;
                 int ind = comp.map.cellIndices.CellToIndex(cell);
-                foreach (GasGrid grid in comp.gasGrids)
+                foreach (GasGrid grid in comp.grid.gasGrids)
                 {
                     float density = grid.DensityInCell(ind);
                     if (density > 0)

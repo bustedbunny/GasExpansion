@@ -24,13 +24,20 @@ namespace GasExpansion
             }
             if (map != null && pos != null)
             {
-                GasMapComponent comp = map.GetComponent<GasMapComponent>();
-                if (comp != null)
+                try
                 {
-                    foreach (GasGrid grid in comp.gasGrids)
+                    GasMapComponent comp = map.GetComponent<GasMapComponent>();
+                    if (comp != null)
                     {
-                        grid.MoveSomewhereElse(pos);
+                        foreach (GasGrid grid in comp.grid.gasGrids)
+                        {
+                            grid.MoveSomewhereElse(pos);
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+
                 }
             }
         }

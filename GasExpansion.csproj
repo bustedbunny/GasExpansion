@@ -44,23 +44,19 @@
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\HotSwap\Assemblies\HotSwap.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="HarmonyPatches\Old\GasGrid_DealDamage.backup" />
-    <Compile Include="AComputeShader\GasExpansionContentDatabase.cs" />
+    <Compile Include="GasExpansionContentDatabase.cs" />
     <Compile Include="GasExpansionMod.cs" />
     <Compile Include="Gas\GasClasses\GasGrid.cs" />
     <Compile Include="Gas\GasClasses\GasGrid_DealDamage.cs" />
     <Compile Include="Gas\GasProperties\GasProperties_DealDamage.cs" />
-    <Compile Include="Gas\GridIndexUtility.cs" />
+    <Compile Include="Gas\GasTrackers\GasDrawer.cs" />
+    <Compile Include="Gas\GasTrackers\GasGridTracker.cs" />
+    <Compile Include="Gas\GasTrackers\GasThreadTracker.cs" />
+    <Compile Include="Gas\GasTrackers\WeatherTracker.cs" />
     <Compile Include="Gas\Pipe\CardinalConnector.cs" />
     <Compile Include="Gas\Pipe\Node.cs" />
     <Compile Include="Gas\Pipe\TripleConnector.cs" />

@@ -30,7 +30,7 @@ namespace GasExpansion
             catch (Exception ex)
             {
                 Log.Error("Failed to get GasProperties_AddHediff fields: " + ex);
-                map.GetComponent<GasMapComponent>().gasGrids.Remove(this);
+                map.GetComponent<GasMapComponent>().grid.gasGrids.Remove(this);
             }
 
         }
@@ -48,7 +48,7 @@ namespace GasExpansion
             catch (Exception ex)
             {
                 Log.Error("Failed to get GasProperties_AddHediff fields: " + ex);
-                map.GetComponent<GasMapComponent>().gasGrids.Remove(this);
+                map.GetComponent<GasMapComponent>().grid.gasGrids.Remove(this);
             }
         }
 

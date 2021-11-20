@@ -82,7 +82,7 @@ namespace GasExpansion
 
         internal static int PathCostAdjastment(int cost, GasMapComponent comp, int ind)
         {
-            if (comp.IsDangerCell(ind))
+            if (comp.grid.pathTracker.IsDangerCell(ind))
             {
                 return cost + 400;
             }

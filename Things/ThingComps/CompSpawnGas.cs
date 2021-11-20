@@ -22,7 +22,7 @@ namespace GasExpansion
             amountOfGas = Props.amountOfGas;
             interval = Props.interval;
             nextTick = Find.TickManager.TicksGame;
-            List<GasGrid> grids = parent.Map.GetComponent<GasMapComponent>().gasGrids;
+            List<GasGrid> grids = parent.Map.GetComponent<GasMapComponent>().grid.gasGrids;
             grid = grids.First(x => x.def == def);
         }
 

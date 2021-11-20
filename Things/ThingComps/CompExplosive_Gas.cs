@@ -193,7 +193,7 @@ namespace GasExpansion
                 effecter.Trigger(new TargetInfo(parent.PositionHeld, map), new TargetInfo(parent.PositionHeld, map));
                 effecter.Cleanup();
             }
-            GasGrid grid = map.GetComponent<GasMapComponent>().gasGrids.Find(x => x.def == Props.gasDef);
+            GasGrid grid = map.GetComponent<GasMapComponent>().grid.gasGrids.Find(x => x.def == Props.gasDef);
             if (grid == null)
             {
                 Log.Error("Couldn't find Gas with gasDef defname.");

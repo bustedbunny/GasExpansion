@@ -62,7 +62,7 @@ namespace GasExpansion
                 effecter.Cleanup();
             }
             GasDefModExtension extension = def.GetModExtension<GasDefModExtension>();
-            GasGrid grid = this.Map.GetComponent<GasMapComponent>().gasGrids.Find(x => x.def == extension.gasDef);
+            GasGrid grid = this.Map.GetComponent<GasMapComponent>().grid.gasGrids.Find(x => x.def == extension.gasDef);
             if (grid == null)
             {
                 Log.Error("GasDefModExtension is not valid. Couldn't find GasGrid. GasDef must be defined in GasDefModExtension.");

@@ -54,7 +54,7 @@ namespace GasExpansion
 
             list.Add(new DebugMenuOption("Explode", DebugMenuOptionMode.Tool, delegate
             {
-                foreach (GasGrid grid in Find.CurrentMap.GetComponent<GasMapComponent>().explosiveGrids)
+                foreach (GasGrid grid in Find.CurrentMap.GetComponent<GasMapComponent>().grid.explosiveGrids)
                 {
                     grid.Explode(UI.MouseCell(), null);
                 }
@@ -71,7 +71,7 @@ namespace GasExpansion
         [DebugAction("Spawning", "Clear All Gas", false, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         public static void ClearAllGas()
         {
-            foreach (GasGrid grid in Find.CurrentMap.GetComponent<GasMapComponent>().gasGrids)
+            foreach (GasGrid grid in Find.CurrentMap.GetComponent<GasMapComponent>().grid.gasGrids)
             {
                 grid.gases.Clear();
                 grid.gasGrid = new float[grid.gasGrid.Length];
@@ -85,7 +85,7 @@ namespace GasExpansion
             {
                 list.Add(new DebugMenuOption(item.LabelCap, DebugMenuOptionMode.Tool, delegate
                 {
-                    Find.CurrentMap.GetComponent<GasMapComponent>().gasGrids.First(x => x.def == item).CreateGas(UI.MouseCell(), 5000);
+                    Find.CurrentMap.GetComponent<GasMapComponent>().grid.gasGrids.First(x => x.def == item).CreateGas(UI.MouseCell(), 5000);
                 }));
             }
             return list;

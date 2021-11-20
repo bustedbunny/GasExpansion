@@ -38,11 +38,11 @@ namespace GasExpansion
             damType.soundExplosion.PlayOneShot(new TargetInfo(center, map));
             if (damType == DamageDefOf.Smoke)
             {
-                map.GetComponent<GasMapComponent>().gasGrids.Find(x => x.def == DefOfClass.GasExpansion_ConcealingSmoke).CreateGas(center, Mathf.Pow(radius, 2) * 500);
+                map.GetComponent<GasMapComponent>().grid.gasGrids.Find(x => x.def == DefOfClass.GasExpansion_ConcealingSmoke).CreateGas(center, Mathf.Pow(radius, 2) * 500);
             }
             else
             {
-                foreach (GasGrid grid in map.GetComponent<GasMapComponent>().gasGrids)
+                foreach (GasGrid grid in map.GetComponent<GasMapComponent>().grid.gasGrids)
                 {
                     int num = GenRadial.NumCellsInRadius(radius);
                     for (int i = 0; i < num; i++)

@@ -1,4 +1,5 @@
-﻿using HotSwap;
+﻿using GasExpansion.Gas.GasTrackers;
+using HotSwap;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ namespace GasExpansion
         public readonly HashSet<int> gasesToRemove = new();
         public readonly HashSet<int> gasesToAdd = new();
         internal int layer;
+
         public virtual void Initialize()
         {
             gasGrid = new float[map.cellIndices.NumGridCells];
@@ -130,7 +132,7 @@ namespace GasExpansion
             float wallOffset = 1;
             for (int i = 0; i < 4; i++)
             {
-                float reserve = gasGrid[ind] / def.spreadSpeed * parent.windOffset[i] * wallOffset;
+                float reserve = gasGrid[ind] / def.spreadSpeed * parent.weather.windOffset[i] * wallOffset;
                 int ind2;
                 switch (i)
                 {
@@ -212,6 +214,7 @@ namespace GasExpansion
             if (gases.Add(ind))
             {
                 transparencyGrid[ind] = 0;
+                parent.grid.totalGasCount++;
             }
 
         }
@@ -222,7 +225,11 @@ namespace GasExpansion
             {
                 return;
             }
-            if (!gases.Remove(ind)) return;
+            if (!gases.Remove(ind))
+            {
+                return;
+            }
+            parent.grid.totalGasCount--;
             for (int i = 0; i < 4; i++)
             {
                 int ind2;
@@ -260,6 +267,7 @@ namespace GasExpansion
                 if (gasGrid[ind2] == 0 && !CanMoveTo(ind2)) continue;
                 gasGrid[ind2] += gasGrid[ind];
                 gasesToAdd.Add(ind2);
+                parent.grid.totalGasCount++;
                 break;
             }
             gasGrid[ind] = 0;
@@ -334,12 +342,6 @@ namespace GasExpansion
         {
             return gasGrid[ind];
         }
-        /*
-        private bool CanMoveTo(int ind)
-        {
-            return !parent.spreadGrid[ind];
-        }
-        */
         private bool CanMoveTo(int ind)
         {
             Building edifice = map.edificeGrid[ind];
@@ -358,10 +360,10 @@ namespace GasExpansion
             return false;
         }
 
-        private int[] signGrid;
-        private int[] angleGrid;
-        private float[] xGrid;
-        private float[] zGrid;
+        internal int[] signGrid;
+        internal int[] angleGrid;
+        internal float[] xGrid;
+        internal float[] zGrid;
         private void GenerateRandGrids()
         {
             int numCells = map.cellIndices.NumGridCells;
@@ -406,7 +408,8 @@ namespace GasExpansion
                 {
                     continue;
                 }
-                block.SetColor(colorID, new Color(def.color.r, def.color.g, def.color.b, Math.Min(transparencyGrid[i] / 1707, 0.3f)));
+                color.a = Math.Min(transparencyGrid[i] / 1707, 0.3f);
+                block.SetColor(colorID, color);
                 Vector3 pos = p.ToVector3ShiftedWithAltitude(AltitudeLayer.Gas);
                 pos.y += layer / 1000f;
                 pos.x += xGrid[i];
@@ -415,10 +418,12 @@ namespace GasExpansion
                 Graphics.DrawMesh(MeshPool.plane10, matrix, material, 0, null, 0, block, false, false, true);
             }
         }
-        private int colorID;
+
+        internal int colorID;
         internal MaterialPropertyBlock block;
-        private Vector3 drawSize;
-        private Matrix4x4 matrix;
+        internal Vector3 drawSize;
+        internal Matrix4x4 matrix;
+        internal Color color;
         public virtual void PostLoad()
         {
             Log.Message("PostLaoded");
@@ -426,6 +431,7 @@ namespace GasExpansion
             block = new MaterialPropertyBlock();
             drawSize = new(4f, 0f, 4f);
             matrix = default;
+            color = new Color(def.color.r, def.color.g, def.color.b, 0);
             parent = map.GetComponent<GasMapComponent>();
             GenerateRandGrids();
 

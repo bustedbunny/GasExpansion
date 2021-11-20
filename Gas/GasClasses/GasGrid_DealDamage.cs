@@ -28,7 +28,7 @@ namespace GasExpansion
             catch (Exception ex)
             {
                 Log.Error("Failed to get GasProperties_DealDamage fields: " + ex);
-                map.GetComponent<GasMapComponent>().gasGrids.Remove(this);
+                map.GetComponent<GasMapComponent>().grid.gasGrids.Remove(this);
             }
 
         }
@@ -47,7 +47,7 @@ namespace GasExpansion
             catch (Exception ex)
             {
                 Log.Error("Failed to get GasProperties_DealDamage fields: " + ex);
-                map.GetComponent<GasMapComponent>().gasGrids.Remove(this);
+                map.GetComponent<GasMapComponent>().grid.gasGrids.Remove(this);
             }
         }
         private int[] cache = new int[0];

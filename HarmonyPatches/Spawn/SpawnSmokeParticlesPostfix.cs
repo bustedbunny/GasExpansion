@@ -18,7 +18,7 @@ namespace GasExpansion
             GasMapComponent comp = __instance.Map.GetComponent<GasMapComponent>();
             if (comp != null)
             {
-                comp.gasGrids.First(x => x.def == DefOfClass.GasExpansion_SmokeBlack).CreateGas(__instance.Position, __instance.fireSize/9);
+                comp.grid.gasGrids.First(x => x.def == DefOfClass.GasExpansion_SmokeBlack).CreateGas(__instance.Position, __instance.fireSize/9);
                 float num = __instance.fireSize / 2f;
                 if (num > 1f)
                 {

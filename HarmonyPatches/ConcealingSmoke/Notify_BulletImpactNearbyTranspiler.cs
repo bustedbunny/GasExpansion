@@ -19,7 +19,7 @@ namespace GasExpansion
 
         private static bool CoveredByGas(Pawn pawn)
         {
-            foreach (GasGrid grid in pawn.Map.GetComponent<GasMapComponent>().gasGrids.Where(x => x.def.blockVision))
+            foreach (GasGrid grid in pawn.Map.GetComponent<GasMapComponent>().grid.gasGrids.Where(x => x.def.blockVision))
             {
                if ( grid.DensityInCell(pawn.Position) > 0)
                 {

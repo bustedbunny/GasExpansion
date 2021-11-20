@@ -30,14 +30,14 @@ namespace GasExpansion
             {
                 float windSpeed = map.windManager.WindSpeed / 1f;
                 windSpeed = Math.Max(0.001f, windSpeed);
-                Vector2 angle = new(-Mathf.Cos(comp.windDirectionFast - Mathf.PI / 2), Mathf.Sin(comp.windDirectionFast - Mathf.PI/2));
+                Vector2 angle = new(-Mathf.Cos(comp.weather.windDirectionFast - Mathf.PI / 2), Mathf.Sin(comp.weather.windDirectionFast - Mathf.PI/2));
                 angle.Normalize();
                 angle = angle * (Find.TickManager.TicksGame % 360000) / 100000f * windSpeed;
-                comp.winddir += angle / 1000f;
-                mat.SetTextureOffset("_MainTex", comp.winddir);
+                comp.weather.winddir += angle / 1000f;
+                mat.SetTextureOffset("_MainTex", comp.weather.winddir);
                 if (mat.HasProperty("_MainTex2"))
                 {
-                    mat.SetTextureOffset("_MainTex2", comp.winddir);
+                    mat.SetTextureOffset("_MainTex2", comp.weather.winddir);
                 }
             }
             return false;

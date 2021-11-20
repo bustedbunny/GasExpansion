@@ -9,6 +9,7 @@ using System.Threading;
 using UnityEngine;
 using Verse;
 using System.Diagnostics;
+using GasExpansion.Gas.GasTrackers;
 
 namespace GasExpansion
 {
@@ -17,332 +18,66 @@ namespace GasExpansion
 #endif
     public class GasMapComponent : MapComponent
     {
-        public List<GasGrid> gasGrids = new();
-        public List<GasGrid> badGrids = new();
-        public List<GasGrid> concealingGrids = new();
-        public List<GasGrid> explosiveGrids = new();
-        private bool[] toxicGrid;
-        private bool[] corrosiveGrid;
         public GasMapComponent(Map map)
             : base(map)
         {
-
+            grid = new GasGridTracker();
+            grid.map = map;
+            grid.parent = this;
+            grid.PreLoadInit();
         }
-
-
-
-        private float windDirectionTarget = Rand.Range(0, 360f);
-        private float windDirection;
-        public float windDirectionFast = 0;
-        public float windStrength = 0;
-        public float WindDirection => windDirection;
-        private static readonly string[] windDirections = new string[8] { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
-        public readonly float[] windOffset = new float[4];
-
-        public byte[] pipeGrid;
-
-        private const float rangeMultiplier = 1f;
-        public bool direction = false;
-        public Vector2 winddir = new();
-        private void UpdateWind()
-        {
-
-            float dif = (windDirectionTarget - windDirection);
-            if (dif > 0)
-            {
-                if (dif < 180)
-                {
-                    windDirection += Rand.Range(0f, 5f) * rangeMultiplier;
-                }
-                else
-                {
-                    windDirection -= Rand.Range(0f, 5f) * rangeMultiplier;
-                }
-            }
-            else
-            {
-                if (dif < -180)
-                {
-                    windDirection += Rand.Range(0f, 5f) * rangeMultiplier;
-                }
-                else
-                {
-                    windDirection -= Rand.Range(0f, 5f) * rangeMultiplier;
-                }
-            }
-            if (windDirection > 360f)
-            {
-                windDirection -= 360f;
-            }
-            if (windDirection < 0f)
-            {
-                windDirection += 360f;
-            }
-
-            while (Math.Abs(windDirectionTarget - windDirection) < 1f)
-            {
-                while (Math.Abs(windDirectionTarget - windDirection) < 30f)
-                {
-
-                    windDirectionTarget = Rand.Range(0, 360);
-                }
-            }
-            windDirectionFast = Mathf.Deg2Rad * windDirection;
-        }
-        private const double minOffset = 0.5;
-        private void CalculateWindOffsets()
-        {
-            double angle = windDirectionFast;
-            double strength = (double)Math.Min(map.windManager.WindSpeed * 0.67, 6);
-            double N = minOffset + Math.Pow(1.0 + Math.Cos(angle), strength);
-            double E = minOffset + Math.Pow(1.0 + Math.Sin(angle), strength);
-            double S = minOffset + Math.Pow(1.0 + Math.Cos(angle + Math.PI), strength);
-            double W = minOffset + Math.Pow(1.0 + Math.Sin(angle + Math.PI), strength);
-            double sum = minOffset * 4 * Math.Max(1, strength) / (N + E + S + W);
-            windOffset[0] = (float)(N * sum);
-            windOffset[1] = (float)(E * sum);
-            windOffset[2] = (float)(S * sum);
-            windOffset[3] = (float)(W * sum);
-        }
-
-        public void DoWindGUI(float xPos, ref float yPos)
-        {
-            float num = 100f;
-            float width = 200f + num;
-            float num2 = 26f;
-            Rect rect = new(xPos - num, yPos - num2, width, num2);
-            Text.Anchor = TextAnchor.MiddleRight;
-            rect.width -= 15f;
-            Text.Font = GameFont.Small;
-            Widgets.Label(rect, WindStrengthText + WindDirectionText);
-            TooltipHandler.TipRegion(rect, "GE_Wind_Tooltip".Translate());
-            Text.Anchor = TextAnchor.UpperLeft;
-            yPos -= num2;
-        }
-
-        private string WindDirectionText
-        {
-            get
-            {
-                if (BeaufortScale == 0)
-                {
-                    return "";
-                }
-                float direction = windDirection + 22.5f;
-                if (direction > 360)
-                {
-                    direction -= 360;
-                }
-                int num = (int)(direction / 45f);
-                return ", " + ("GE_Wind_Direction_" + windDirections[num]).Translate();
-            }
-        }
-        private float WindStrength => Mathf.Min(3f * map.windManager.WindSpeed, 9f);
-        private int BeaufortScale => Mathf.FloorToInt(WindStrength);
-        private string WindStrengthText => ("GE_Wind_Beaufort" + BeaufortScale).Translate();
-
+        public WeatherTracker weather;
+        public GasGridTracker grid = new GasGridTracker();
         public override void MapComponentTick()
         {
-#if DEBUG
-            Stopwatch sw = Stopwatch.StartNew();
-#endif
             int tick = Find.TickManager.TicksGame;
-            Parallel.ForEach(gasGrids, gasGrid =>
+            if (tick % 15 == 0)
+            {
+                grid.totalGasCount = 0;
+            }
+            Parallel.ForEach(grid.gasGrids, gasGrid =>
             {
                 gasGrid.Tick();
                 gasGrid.UpdateTransparency();
                 if (tick % 15 == 0)
                 {
                     gasGrid.TickThreaded();
+                    lock (grid.gasCountLock)
+                    {
+                        grid.totalGasCount += gasGrid.gases.Count;
+                    }
+
                 }
             });
             if (tick % 250 == 0)
             {
-                for (int i = 0; i < gasGrids.Count; i++)
+                for (int i = 0; i < grid.gasGrids.Count; i++)
                 {
-                    gasGrids[i].TickRare();
+                    grid.gasGrids[i].TickRare();
                 }
-                CachePathGrid();
-                UpdateWind();
-                CalculateWindOffsets();
+                grid.pathTracker.CachePathGrid();
+                weather.UpdateTracker();
                 if (tick % 2000 == 0)
                 {
-                    for (int i = 0; i < gasGrids.Count; i++)
+                    for (int i = 0; i < grid.gasGrids.Count; i++)
                     {
-                        gasGrids[i].TickLong();
-                    }
-                }
-            }
-#if DEBUG
-            sw.Stop();
-            Log.Message(sw.Elapsed.ToString());
-#endif
-        }
-
-
-        public bool IsDangerCell(IntVec3 cell)
-        {
-            int ind = map.cellIndices.CellToIndex(cell);
-            if (toxicGrid[ind])
-            {
-                return true;
-            }
-            if (corrosiveGrid[ind])
-            {
-                return true;
-            }
-            return false;
-        }
-        public bool IsDangerCell(int ind)
-        {
-            if (toxicGrid[ind])
-            {
-                return true;
-            }
-            if (corrosiveGrid[ind])
-            {
-                return true;
-            }
-            return false;
-        }
-
-        public bool ShouldPathThrough(IntVec3 cell, GasExpansion_PawnResistance resistance)
-        {
-            int ind = map.cellIndices.CellToIndex(cell);
-            if (!resistance.toxic && toxicGrid[ind])
-            {
-                return false;
-            }
-            if (!resistance.corrosive && corrosiveGrid[ind])
-            {
-                return false;
-            }
-            return true;
-        }
-        public bool ShouldPathThrough(int ind, GasExpansion_PawnResistance resistance)
-        {
-            if (!resistance.toxic && toxicGrid[ind])
-            {
-                return false;
-            }
-            if (!resistance.corrosive && corrosiveGrid[ind])
-            {
-                return false;
-            }
-            return true;
-        }
-        public bool ShouldPathThrough(IntVec3 cell, Pawn pawn)
-        {
-            int ind = map.cellIndices.CellToIndex(cell);
-            if (!toxicGrid[ind] && !corrosiveGrid[ind])
-            {
-                return true;
-            }
-            GasExpansion_PawnResistance resistance = GetResistance(pawn);
-            if (!resistance.toxic && toxicGrid[ind])
-            {
-                return false;
-            }
-            if (!resistance.corrosive && corrosiveGrid[ind])
-            {
-                return false;
-            }
-            return true;
-        }
-
-        public static GasExpansion_PawnResistance GetResistance(Pawn pawn)
-        {
-            GasExpansion_PawnResistance resistance = new();
-            if (pawn?.apparel?.WornApparel != null)
-            {
-                bool skip1 = true;
-                foreach (Thing apparel in pawn.apparel.WornApparel)
-                {
-                    if (skip1 && apparel.def.apparel.tags.Any(x => x == "GasMask"))
-                    {
-                        resistance.toxic = true;
-                        break;
-                    }
-                }
-                if (pawn.GetStatValue(StatDefOf.ArmorRating_Heat) >= 0.5f)
-                {
-                    resistance.corrosive = true;
-                }
-            }
-            return resistance;
-        }
-        private void CachePathGrid()
-        {
-            toxicGrid = new bool[map.cellIndices.NumGridCells];
-            corrosiveGrid = new bool[map.cellIndices.NumGridCells];
-            for (int i = 0; i < badGrids.Count; i++)
-            {
-                if (badGrids[i].def.isToxic)
-                {
-                    foreach (int ind in badGrids[i].gases)
-                    {
-                        if (badGrids[i].gasGrid[ind] > 30)
-                        {
-                            toxicGrid[ind] = true;
-                        }
-                    }
-                }
-                else if (badGrids[i].def.isCorrosive)
-                {
-                    foreach (int ind in badGrids[i].gases)
-                    {
-                        if (badGrids[i].gasGrid[ind] > 30)
-                        {
-                            corrosiveGrid[ind] = true;
-                        }
-                    }
-                }
-                else if (badGrids[i].def.isToxic && badGrids[i].def.isCorrosive)
-                {
-                    foreach (int ind in badGrids[i].gases)
-                    {
-                        if (badGrids[i].gasGrid[ind] > 30)
-                        {
-                            corrosiveGrid[ind] = true;
-                            toxicGrid[ind] = true;
-                        }
+                        grid.gasGrids[i].TickLong();
                     }
                 }
             }
         }
 
-        public static float GasVisionInCell(IntVec3 cell, Map map)
-        {
-            GasMapComponent comp = map.GetComponent<GasMapComponent>();
-            int ind = comp.gasGrids[0].CellToIndex(cell);
-            float num = 0;
-            for (int i = 0; i < comp.concealingGrids.Count; i++)
-            {
-                num += Math.Min(comp.concealingGrids[i].DensityInCell(ind), 512) / 512f;
-            }
-            return num;
-        }
-
-        public Material material;
+        GasDrawer drawer;
         public override void MapComponentUpdate()
         {
-            if (material == null)
-            {
-                material = MaterialPool.MatFrom(new MaterialRequest(color: new Color(0, 0, 0, 0), tex: Textures.tex, shader: ShaderDatabase.TransparentPostLight));
-            }
-            CameraDriver camera = Find.CameraDriver;
-            CellRect currentViewRect = camera.CurrentViewRect;
-            currentViewRect.ClipInsideMap(map);
-            currentViewRect.ExpandedBy(1);
-            float minGas = camera.rootSize * 2f;
-            int angle = (Find.TickManager.TicksGame % 720) / 2;
-            for (int i = 0; i < gasGrids.Count; i++)
-            {
-                gasGrids[i].Draw(currentViewRect, material, angle, minGas);
-            }
+            drawer.Draw();
         }
 
         /*
+        grid.gasGrids[i].Draw(currentViewRect, material, angle, minGas);
+        */
+
+
         public override void MapComponentOnGUI()
         {
             if (!Prefs.DevMode)
@@ -352,7 +87,7 @@ namespace GasExpansion
             CellRect currentViewRect = Find.CameraDriver.CurrentViewRect;
             currentViewRect.ClipInsideMap(map);
             currentViewRect.ExpandedBy(1);
-            foreach (GasGrid grid in gasGrids)
+            foreach (GasGrid grid in grid.gasGrids)
             {
                 foreach (int i in grid.gases)
                 {
@@ -365,7 +100,7 @@ namespace GasExpansion
                 }
             }
         }
-        */
+
 
         public bool CanMoveTo(int ind)
         {
@@ -386,72 +121,25 @@ namespace GasExpansion
         }
         public void PreLoadInit()
         {
-            pipeGrid = new byte[map.cellIndices.NumGridCells];
-            toxicGrid = new bool[map.cellIndices.NumGridCells];
-            corrosiveGrid = new bool[map.cellIndices.NumGridCells];
-            for (int i = 0; i < gasGrids.Count; i++)
-            {
-                gasGrids[i].parent = this;
-            }
+            grid.map = map;
+            grid.parent = this;
+            grid.PreLoadInit();
         }
         public override void FinalizeInit()
         {
-
-            for (int i = gasGrids.Count - 1; i >= 0; i--)
-            {
-                if (gasGrids[i].def == null)
-                {
-                    gasGrids.RemoveAt(i);
-                }
-            }
-
-            foreach (GasDef def in DefDatabase<GasDef>.AllDefs)
-            {
-                if (!gasGrids.Any(g => g.def == def))
-                {
-                    GasGrid newGrid = null;
-                    try
-                    {
-                        newGrid = (GasGrid)Activator.CreateInstance(def.gasClass);
-                        newGrid.def = def;
-                        newGrid.map = map;
-                        newGrid.Initialize();
-                        gasGrids.Add(newGrid);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("Could not instantiate or initialize a GasGrid: " + ex);
-                        gasGrids.Remove(newGrid);
-                    }
-
-                }
-            }
-            for (int i = 0; i < gasGrids.Count; i++)
-            {
-                if (gasGrids[i].def.isBad)
-                {
-                    badGrids.Add(gasGrids[i]);
-                }
-                if (gasGrids[i].def.blockVision)
-                {
-                    concealingGrids.Add(gasGrids[i]);
-                }
-                if (gasGrids[i].def.isExplosive)
-                {
-                    explosiveGrids.Add(gasGrids[i]);
-                }
-                gasGrids[i].PostLoad();
-                gasGrids[i].parent = this;
-                gasGrids[i].layer = i;
-            }
-            CachePathGrid();
+            weather = new WeatherTracker();
+            weather.parent = this;
+            grid.FinalizeInit();
+            grid.pathTracker.CachePathGrid();
+            drawer = new GasDrawer();
+            drawer.grid = grid;
+            drawer.map = map;
+            drawer.Initialize();
         }
         public override void ExposeData()
         {
-            Scribe_Collections.Look(ref gasGrids, "gasGrids", LookMode.Deep);
-            Scribe_Values.Look(ref windDirection, "windDirection");
-            Scribe_Values.Look(ref windDirectionTarget, "windDirectionTarget");
-            Scribe_Values.Look(ref winddir, "winddir");
+            Scribe_Deep.Look(ref grid, "gasGrids");
+            Scribe_Deep.Look(ref weather, "weatherTracker");
         }
     }
 }

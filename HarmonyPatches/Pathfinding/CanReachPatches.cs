@@ -25,7 +25,7 @@ namespace GasExpansion
                 __result = false;
                 return false;
             }
-            if (!pawn.Map.GetComponent<GasMapComponent>().ShouldPathThrough(dest.Cell, pawn))
+            if (!pawn.Map.GetComponent<GasMapComponent>().grid.pathTracker.ShouldPathThrough(dest.Cell, pawn))
             {
                 __result = false;
                 return false;
@@ -43,7 +43,7 @@ namespace GasExpansion
             {
                 return true;
             }
-            if (!___map.GetComponent<GasMapComponent>().IsDangerCell(dest.Cell))
+            if (!___map.GetComponent<GasMapComponent>().grid.pathTracker.IsDangerCell(dest.Cell))
             {
                 __result = false;
                 return false;
@@ -65,7 +65,7 @@ namespace GasExpansion
                 __result = false;
                 return;
             }
-            if (!pawn.Map.GetComponent<GasMapComponent>().ShouldPathThrough(c, pawn))
+            if (!pawn.Map.GetComponent<GasMapComponent>().grid.pathTracker.ShouldPathThrough(c, pawn))
             {
                 __result = false;
                 return;

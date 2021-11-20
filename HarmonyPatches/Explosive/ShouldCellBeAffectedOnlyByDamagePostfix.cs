@@ -13,7 +13,7 @@ namespace GasExpansion
     {
         internal static void Postfix(Explosion __instance, IntVec3 c)
         {
-            foreach (GasGrid grid in __instance.Map.GetComponent<GasMapComponent>().explosiveGrids)
+            foreach (GasGrid grid in __instance.Map.GetComponent<GasMapComponent>().grid.explosiveGrids)
             {
                 grid.Explode(c, __instance.instigator);
             }

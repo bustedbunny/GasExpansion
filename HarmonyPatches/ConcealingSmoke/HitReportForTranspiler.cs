@@ -23,7 +23,7 @@ namespace GasExpansion
         {
             
             Map map = caster.Map;
-            IEnumerable<GasGrid> list2 = caster.Map.GetComponent<GasMapComponent>().gasGrids.Where(x => x.def.blockVision);
+            IEnumerable<GasGrid> list2 = caster.Map.GetComponent<GasMapComponent>().grid.gasGrids.Where(x => x.def.blockVision);
             float multiplier = 1f;
             foreach (IntVec3 cell in list)
             {
