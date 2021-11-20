@@ -35,7 +35,7 @@ namespace GasExpansion
         {
         }
 
-        public virtual void TickThreaded()
+        public virtual void TickThrottled()
         {
             if (def.needRoof)
             {
@@ -188,17 +188,12 @@ namespace GasExpansion
             }
             if (room.cachedOpenRoofCount == -1)
             {
-                lock (room)
-                {
-                    _ = room.OpenRoofCount;
-                }
+                _ = room.OpenRoofCount;
             }
             if (room.cachedCellCount == -1)
             {
-                lock (room)
-                {
-                    _ = room.CellCount;
-                }
+                _ = room.CellCount;
+
             }
             return room.cachedOpenRoofCount >= room.cachedCellCount * 0.25;
         }
@@ -398,40 +393,8 @@ namespace GasExpansion
             }
         }
 
-        public void Draw(CellRect currentViewRect, Material material, int curTick, float minGas)
-        {
-            foreach (int i in gases)
-            {
-                if (transparencyGrid[i] < minGas) continue;
-                IntVec3 p = IndexToCell(i);
-                if (!currentViewRect.Contains(p))
-                {
-                    continue;
-                }
-                color.a = Math.Min(transparencyGrid[i] / 1707, 0.3f);
-                block.SetColor(colorID, color);
-                Vector3 pos = p.ToVector3ShiftedWithAltitude(AltitudeLayer.Gas);
-                pos.y += layer / 1000f;
-                pos.x += xGrid[i];
-                pos.z += zGrid[i];
-                matrix.SetTRS(pos, Quaternion.AngleAxis((float)(angleGrid[i] + curTick * signGrid[i]), Vector3.up), drawSize);
-                Graphics.DrawMesh(MeshPool.plane10, matrix, material, 0, null, 0, block, false, false, true);
-            }
-        }
-
-        internal int colorID;
-        internal MaterialPropertyBlock block;
-        internal Vector3 drawSize;
-        internal Matrix4x4 matrix;
-        internal Color color;
         public virtual void PostLoad()
         {
-            Log.Message("PostLaoded");
-            colorID = Shader.PropertyToID("_Color");
-            block = new MaterialPropertyBlock();
-            drawSize = new(4f, 0f, 4f);
-            matrix = default;
-            color = new Color(def.color.r, def.color.g, def.color.b, 0);
             parent = map.GetComponent<GasMapComponent>();
             GenerateRandGrids();
 

@@ -14,7 +14,7 @@ namespace GasExpansion.Gas.GasTrackers
 #endif
     public class GasDrawer
     {
-        private Bounds bounds;
+
         private struct MeshProperties
         {
             public uint index;
@@ -27,12 +27,9 @@ namespace GasExpansion.Gas.GasTrackers
             }
         }
 
-
-        private MaterialPropertyBlock block = new();
         private Material material;
-        private CellRect currentViewRect;
-        private float minGas;
         private float angle;
+        private Bounds bounds;
 
         public GasGridTracker grid;
         public Map map;
@@ -57,26 +54,35 @@ namespace GasExpansion.Gas.GasTrackers
                 meshPropertiesBuffer.Release();
             }
             //    angle = (Find.TickManager.TicksGame % 720) / 5;
-            angle = (Find.TickManager.TicksGame % 720) / Mathf.PI * 180f /1000f;
+            angle = (Find.TickManager.TicksGame % 720) / Mathf.PI * 180f / 1000f;
             MeshProperties[] properties = new MeshProperties[grid.totalGasCount];
             int ind = 0;
+            CameraDriver camera = Find.CameraDriver;
+            currentViewRect = camera.CurrentViewRect;
+            currentViewRect.ClipInsideMap(map);
+            currentViewRect.ExpandedBy(1);
             foreach (GasGrid gasGrid in grid.gasGrids)
             {
                 foreach (int i in gasGrid.gases)
                 {
                     IntVec3 p = gasGrid.IndexToCell(i);
+                    if (!currentViewRect.Contains(p)) continue;
+
                     MeshProperties props = new MeshProperties();
                     props.angle = angle * gasGrid.signGrid[i];
                     props.index = (uint)i;
                     props.yOffset = gasGrid.layer;
-                    props.color = new Color(gasGrid.color.r, gasGrid.color.g, gasGrid.color.b, Math.Min(gasGrid.transparencyGrid[i] / 512, 200)); //
-                    //1707 0.3
+                    props.color = new Color(gasGrid.def.color.r, gasGrid.def.color.g, gasGrid.def.color.b, Math.Min(gasGrid.transparencyGrid[i] / 512, 200)); 
                     properties[ind] = props;
                     ind++;
                 }
             }
-            meshPropertiesBuffer = new ComputeBuffer(grid.totalGasCount, MeshProperties.Size());
-            meshPropertiesBuffer.SetData(properties);
+            if (ind == 0)
+            {
+                return;
+            }
+            meshPropertiesBuffer = new ComputeBuffer(ind , MeshProperties.Size());
+            meshPropertiesBuffer.SetData(properties, 0, 0, ind );
             material.SetBuffer("_Properties", meshPropertiesBuffer);
 
             uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
@@ -93,6 +99,8 @@ namespace GasExpansion.Gas.GasTrackers
         private ComputeBuffer meshPropertiesBuffer;
         private ComputeBuffer argsBuffer;
         private ComputeBuffer matrixBuffer;
+        private CellRect currentViewRect;
+
         public void Initialize()
         {
             bounds = new Bounds(Vector3.zero, Vector3.one * 10000f);
@@ -104,7 +112,7 @@ namespace GasExpansion.Gas.GasTrackers
             {
                 matrixBuffer.Release();
             }
-            Vector3 size = new(4f, 0f, 4f);
+            Vector3 size = new(2.5f, 0f, 2.5f);
             Matrix4x4[] matrices = new Matrix4x4[map.cellIndices.NumGridCells];
             for (int i = 0; i < map.cellIndices.NumGridCells; i++)
             {
@@ -132,18 +140,5 @@ namespace GasExpansion.Gas.GasTrackers
             material = MaterialPool.MatFrom(req);
             material.enableInstancing = true;
         }
-        /*
-CameraDriver camera = Find.CameraDriver;
-currentViewRect = camera.CurrentViewRect;
-currentViewRect.ClipInsideMap(map);
-currentViewRect.ExpandedBy(1);
-minGas = camera.rootSize * 2f;
-*/
-
-        //    Vector3 pos = p.ToVector3ShiftedWithAltitude(AltitudeLayer.Gas);
-        //    pos.y += gasGrid.layer;
-        //    pos.x += gasGrid.xGrid[i];
-        //    pos.z += gasGrid.zGrid[i];
-        //    Quaternion rotation = Quaternion.AngleAxis((float)(gasGrid.angleGrid[i] + angle + gasGrid.signGrid[i]), Vector3.up);
     }
 }

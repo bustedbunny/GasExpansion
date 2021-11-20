@@ -18,7 +18,6 @@ namespace GasExpansion.Gas.GasTrackers
         public bool[] corrosiveGrid;
 
         public int totalGasCount = 0;
-        public object gasCountLock = new object();
 
         public Map map;
         public GasMapComponent parent;
@@ -92,6 +91,19 @@ namespace GasExpansion.Gas.GasTrackers
                 gasGrids[i].PostLoad();
                 gasGrids[i].parent = parent;
                 gasGrids[i].layer = i;
+            }
+            CountGases();
+        }
+
+        private void CountGases()
+        {
+            totalGasCount = 0;
+            foreach(GasGrid gasGrid in gasGrids)
+            {
+                foreach(int i in gasGrid.gases)
+                {
+                    totalGasCount++;
+                }
             }
         }
         public void ExposeData()

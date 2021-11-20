@@ -54,9 +54,9 @@ namespace GasExpansion
         private int iterations = 0;
         private int curIteration = 0;
         private int curStopInd = 0;
-        public override void TickThreaded()
+        public override void TickThrottled()
         {
-            base.TickThreaded();
+            base.TickThrottled();
             for (int i = curIteration; i < curStopInd; i++)
             {
                 Damage(cache[i]);
@@ -83,62 +83,60 @@ namespace GasExpansion
                 return;
             }
             float num = (Math.Min(gasGrid[ind], maxGasDensity) / damageDivider);
-            lock (map.thingGrid.ThingsListAtFast(ind))
+            List<Thing> things = map.thingGrid.ThingsListAtFast(ind);
+            if (things.Count > 0)
             {
-                List<Thing> things = map.thingGrid.ThingsListAtFast(ind);
-                if (things.Count > 0)
+                for (int i = things.Count - 1; i >= 0; i--)
                 {
-                    for (int i = things.Count - 1; i >= 0; i--)
+                    if (things[i].Map == null || things[i].Position == null)
                     {
-                        if (things[i].Map == null || things[i].Position == null)
+                        continue;
+                    }
+                    if (things[i] is Pawn pawn)
+                    {
+                        DamageInfo dinfo = new(gasDamageType, num);
+                        dinfo.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
+                        if (pawn.RaceProps.IsMechanoid)
                         {
+                            dinfo.SetIgnoreArmor(true);
+                            things[i].TakeDamage(dinfo);
                             continue;
                         }
-                        if (things[i] is Pawn pawn)
+                        float armor = 0;
+                        if (pawn.apparel != null)
                         {
-                            DamageInfo dinfo = new(gasDamageType, num);
-                            dinfo.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
-                            if (pawn.RaceProps.IsMechanoid)
+                            foreach (Thing apparel in pawn.apparel.WornApparel)
                             {
-                                dinfo.SetIgnoreArmor(true);
-                                things[i].TakeDamage(dinfo);
+                                armor += apparel.GetStatValue(armorStat);
+                            }
+
+                            if (armor > 1.4f)
+                            {
+                                if (pawn.apparel.WornApparel.TryRandomElement(out var result))
+                                {
+                                    result.TakeDamage(dinfo);
+                                }
                                 continue;
                             }
-                            float armor = 0;
-                            if (pawn.apparel != null)
-                            {
-                                foreach (Thing apparel in pawn.apparel.WornApparel)
-                                {
-                                    armor += apparel.GetStatValue(armorStat);
-                                }
-
-                                if (armor > 1.4f)
-                                {
-                                    if (pawn.apparel.WornApparel.TryRandomElement(out var result))
-                                    {
-                                        result.TakeDamage(dinfo);
-                                    }
-                                    continue;
-                                }
-                            }
-                            DamageResult dmgResult = things[i].TakeDamage(dinfo);
-                            if (dmgResult.totalDamageDealt > 1f && !pawn.Downed &&
-                                (pawn.CurJob == null || pawn.CurJob.def.checkOverrideOnDamage == CheckJobOverrideOnDamageMode.Never ||
-                                (!pawn.CurJob.playerForced && !pawn.Drafted && pawn.CurJobDef != JobDefOf.Flee)) && !pawn.Dead &&
-                                RCellFinder.TryFindDirectFleeDestination(pawn.Position, 9f, pawn, out var newPos))
-                            {
-                                Job job = JobMaker.MakeJob(JobDefOf.Goto, newPos);
-                                job.locomotionUrgency = LocomotionUrgency.Sprint;
-                                pawn.jobs.StartJob(job, JobCondition.InterruptForced);
-                            }
                         }
-                        else
+                        DamageResult dmgResult = things[i].TakeDamage(dinfo);
+                        if (dmgResult.totalDamageDealt > 1f && !pawn.Downed &&
+                            (pawn.CurJob == null || pawn.CurJob.def.checkOverrideOnDamage == CheckJobOverrideOnDamageMode.Never ||
+                            (!pawn.CurJob.playerForced && !pawn.Drafted && pawn.CurJobDef != JobDefOf.Flee)) && !pawn.Dead &&
+                            RCellFinder.TryFindDirectFleeDestination(pawn.Position, 9f, pawn, out var newPos))
                         {
-                            things[i].TakeDamage(new DamageInfo(DamageDefOf.Burn, num));
+                            Job job = JobMaker.MakeJob(JobDefOf.Goto, newPos);
+                            job.locomotionUrgency = LocomotionUrgency.Sprint;
+                            pawn.jobs.StartJob(job, JobCondition.InterruptForced);
                         }
+                    }
+                    else
+                    {
+                        things[i].TakeDamage(new DamageInfo(DamageDefOf.Burn, num));
                     }
                 }
             }
+
             if (!damageAdjacentWalls)
             {
                 return;
@@ -179,15 +177,14 @@ namespace GasExpansion
                 }
                 if (gasGrid[ind2] > 0) continue;
 
-                lock ((object)ind2)
-                {
-                    Building edifice = map.edificeGrid[ind2];
 
-                    if (edifice != null && edifice.def.Fillage == FillCategory.Full)
-                    {
-                        edifice.TakeDamage(new DamageInfo(DamageDefOf.Burn, num * 3));
-                    }
+                Building edifice = map.edificeGrid[ind2];
+
+                if (edifice != null && edifice.def.Fillage == FillCategory.Full)
+                {
+                    edifice.TakeDamage(new DamageInfo(DamageDefOf.Burn, num * 3));
                 }
+
 
 
 

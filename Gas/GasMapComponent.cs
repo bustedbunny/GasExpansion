@@ -27,28 +27,31 @@ namespace GasExpansion
             grid.PreLoadInit();
         }
         public WeatherTracker weather;
-        public GasGridTracker grid = new GasGridTracker();
-        public override void MapComponentTick()
+        public GasGridTracker grid;
+
+        public override async void MapComponentTick()
         {
             int tick = Find.TickManager.TicksGame;
-            if (tick % 15 == 0)
+            /*
+            var tasks = grid.gasGrids.Select(x => Task.Run(() => ThreadedTask(tick, x)));
+            await Task.WhenAll(tasks);
+            */
+            await Task.Run(() =>
             {
-                grid.totalGasCount = 0;
-            }
-            Parallel.ForEach(grid.gasGrids, gasGrid =>
-            {
-                gasGrid.Tick();
-                gasGrid.UpdateTransparency();
-                if (tick % 15 == 0)
+                foreach (GasGrid gasGrid in grid.gasGrids)
                 {
-                    gasGrid.TickThreaded();
-                    lock (grid.gasCountLock)
-                    {
-                        grid.totalGasCount += gasGrid.gases.Count;
-                    }
-
+                    gasGrid.UpdateTransparency();
                 }
             });
+
+            if (tick % 15 == 0)
+            {
+                foreach (GasGrid gasGrid in grid.gasGrids)
+                {
+                    gasGrid.TickThrottled();
+                    grid.totalGasCount += gasGrid.gases.Count;
+                }
+            }
             if (tick % 250 == 0)
             {
                 for (int i = 0; i < grid.gasGrids.Count; i++)
@@ -135,6 +138,9 @@ namespace GasExpansion
             drawer.grid = grid;
             drawer.map = map;
             drawer.Initialize();
+            //      threadTracker = new();
+            //      threadTracker.parent = grid;
+            //     threadTracker.CreateThreads();
         }
         public override void ExposeData()
         {
