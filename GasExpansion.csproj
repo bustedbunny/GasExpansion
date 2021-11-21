@@ -100,6 +100,7 @@
     <Compile Include="HarmonyPatches\Spawn\BuildingSpawnSetupPostfix.cs" />
     <Compile Include="Misc\Textures.cs" />
     <Compile Include="HarmonyPatches\ConcealingSmoke\Verb_SmokePopPopPrefix.cs" />
+    <None Include="Shader\InstancedColor.shader" />
   </ItemGroup>
   <ItemGroup>
     <Publicize Include="Assembly-CSharp:Verse.ShotReport.factorFromShooterAndDist" />
