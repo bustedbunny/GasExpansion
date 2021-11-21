@@ -30,7 +30,9 @@ namespace GasExpansion
         }
         public WeatherTracker weather;
         public GasGridTracker grid;
+        
         private GasDrawer drawer;
+
 
         private bool _throttled = false;
         private bool _rare = false;
@@ -80,17 +82,14 @@ namespace GasExpansion
             }
         }
 
-
+        
         public override void MapComponentUpdate()
         {
             drawer.Draw();
         }
 
+
         /*
-        grid.gasGrids[i].Draw(currentViewRect, material, angle, minGas);
-        */
-
-
         public override void MapComponentOnGUI()
         {
             if (!Prefs.DevMode)
@@ -113,7 +112,7 @@ namespace GasExpansion
                 }
             }
         }
-
+        */
 
         public bool CanMoveTo(int ind)
         {
@@ -140,11 +139,13 @@ namespace GasExpansion
         }
         public override void FinalizeInit()
         {
-            weather = new WeatherTracker();
-            weather.parent = this;
+            weather = new WeatherTracker(this);
             grid.FinalizeInit();
-            grid.pathTracker.CachePathGrid();
             drawer = new GasDrawer(grid, map);
+        }
+        public override void MapRemoved()
+        {
+            drawer.ReleaseAllBuffers();
         }
         public override void ExposeData()
         {
