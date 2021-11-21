@@ -21,21 +21,23 @@ namespace GasExpansion
         public GasMapComponent(Map map)
             : base(map)
         {
-            grid = new GasGridTracker();
-            grid.map = map;
-            grid.parent = this;
+            grid = new GasGridTracker
+            {
+                map = map,
+                parent = this
+            };
             grid.PreLoadInit();
         }
         public WeatherTracker weather;
         public GasGridTracker grid;
+        private GasDrawer drawer;
 
+        private bool _throttled = false;
+        private bool _rare = false;
+        private bool _long = false;
         public override async void MapComponentTick()
         {
             int tick = Find.TickManager.TicksGame;
-            /*
-            var tasks = grid.gasGrids.Select(x => Task.Run(() => ThreadedTask(tick, x)));
-            await Task.WhenAll(tasks);
-            */
             await Task.Run(() =>
             {
                 foreach (GasGrid gasGrid in grid.gasGrids)
@@ -44,33 +46,41 @@ namespace GasExpansion
                 }
             });
 
-            if (tick % 15 == 0)
+            _throttled = (tick % 15 == 0);
+            if (_throttled)
             {
-                foreach (GasGrid gasGrid in grid.gasGrids)
+                grid.totalGasCount = 0;
+                drawer.bufferIsDirty = true;
+            }
+            _rare = (tick % 250 == 0);
+            _long = (tick % 2000 == 0);
+            if (_rare)
+            {
+                grid.pathTracker.CachePathGrid();
+                weather.UpdateTracker();
+
+            }
+            foreach (GasGrid gasGrid in grid.gasGrids)
+            {
+                if (_throttled)
                 {
                     gasGrid.TickThrottled();
                     grid.totalGasCount += gasGrid.gases.Count;
+
                 }
-            }
-            if (tick % 250 == 0)
-            {
-                for (int i = 0; i < grid.gasGrids.Count; i++)
+                if (_rare)
                 {
-                    grid.gasGrids[i].TickRare();
-                }
-                grid.pathTracker.CachePathGrid();
-                weather.UpdateTracker();
-                if (tick % 2000 == 0)
-                {
-                    for (int i = 0; i < grid.gasGrids.Count; i++)
+                    gasGrid.TickRare();
+
+                    if (_long)
                     {
-                        grid.gasGrids[i].TickLong();
+                        gasGrid.TickLong();
                     }
                 }
             }
         }
 
-        GasDrawer drawer;
+
         public override void MapComponentUpdate()
         {
             drawer.Draw();
@@ -134,13 +144,7 @@ namespace GasExpansion
             weather.parent = this;
             grid.FinalizeInit();
             grid.pathTracker.CachePathGrid();
-            drawer = new GasDrawer();
-            drawer.grid = grid;
-            drawer.map = map;
-            drawer.Initialize();
-            //      threadTracker = new();
-            //      threadTracker.parent = grid;
-            //     threadTracker.CreateThreads();
+            drawer = new GasDrawer(grid, map);
         }
         public override void ExposeData()
         {

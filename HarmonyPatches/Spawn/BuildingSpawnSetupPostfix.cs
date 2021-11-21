@@ -37,7 +37,7 @@ namespace GasExpansion
                 }
                 catch (Exception ex)
                 {
-
+                    Log.Error("Couldn't spawn object because of gas grid: " + ex.Message);
                 }
             }
         }

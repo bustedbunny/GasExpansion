@@ -34,9 +34,11 @@ namespace GasExpansion.Gas.GasTrackers
 
         public void PreLoadInit()
         {
-            pathTracker = new GasPathTracker();
-            pathTracker.grid = this;
-            pathTracker.map = map;
+            pathTracker = new GasPathTracker
+            {
+                grid = this,
+                map = map
+            };
             toxicGrid = new bool[map.cellIndices.NumGridCells];
             corrosiveGrid = new bool[map.cellIndices.NumGridCells];
             for (int i = 0; i < gasGrids.Count; i++)
@@ -100,10 +102,7 @@ namespace GasExpansion.Gas.GasTrackers
             totalGasCount = 0;
             foreach(GasGrid gasGrid in gasGrids)
             {
-                foreach(int i in gasGrid.gases)
-                {
-                    totalGasCount++;
-                }
+                totalGasCount += gasGrid.gases.Count;
             }
         }
         public void ExposeData()
