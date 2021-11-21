@@ -93,6 +93,7 @@ namespace GasExpansion.Gas.GasTrackers
                 gasGrids[i].layer = i;
             }
             CountGases();
+            pathTracker.CachePathGrid();
         }
 
         private void CountGases()
