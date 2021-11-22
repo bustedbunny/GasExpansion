@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GasExpansion.Gas.Pipe;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,9 +12,7 @@ namespace GasExpansion
     {
         public Segment zeroSegment;
         public Segment oneSegment;
-        public float currentPressure;
 
-        protected const float maxPressure = 1000f;
         protected static readonly IntVec3[] offsets =
 {
             new IntVec3(0, 0,1),
@@ -22,41 +21,30 @@ namespace GasExpansion
             new IntVec3(1, 0,0)
         };
 
-        public void UpdateConnections()
+        public virtual void UpdateConnections()
         {
             if (this.Rotation == Rot4.South)
             {
-                zeroSegment = GetFirstPipe(Position + offsets[1]);
-                oneSegment = GetFirstPipe(Position + offsets[0]);
+                zeroSegment = PipeUtility.GetFirstSegment(Position + offsets[1], Map);
+                oneSegment = PipeUtility.GetFirstSegment(Position + offsets[0], Map);
             }
             else if (this.Rotation == Rot4.North)
             {
-                zeroSegment = GetFirstPipe(Position + offsets[0]);
-                oneSegment = GetFirstPipe(Position + offsets[1]);
+                zeroSegment = PipeUtility.GetFirstSegment(Position + offsets[0], Map);
+                oneSegment = PipeUtility.GetFirstSegment(Position + offsets[1], Map);
             }
             else if (this.Rotation == Rot4.West)
             {
-                zeroSegment = GetFirstPipe(Position + offsets[2]);
-                oneSegment = GetFirstPipe(Position + offsets[3]);
+                zeroSegment = PipeUtility.GetFirstSegment(Position + offsets[2], Map);
+                oneSegment = PipeUtility.GetFirstSegment(Position + offsets[3], Map);
             }
             else if (this.Rotation == Rot4.East)
             {
-                zeroSegment = GetFirstPipe(Position + offsets[3]);
-                oneSegment = GetFirstPipe(Position + offsets[2]);
+                zeroSegment = PipeUtility.GetFirstSegment(Position + offsets[3], Map);
+                oneSegment = PipeUtility.GetFirstSegment(Position + offsets[2], Map);
             }
         }
 
-        protected Segment GetFirstPipe(IntVec3 cell)
-        {
-            foreach (Thing item in cell.GetThingList(Map))
-            {
-                if (item is Segment segment)
-                {
-                    return segment;
-                }
-            }
-            return null;
-        }
 
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
         {
@@ -64,7 +52,7 @@ namespace GasExpansion
             UpdateConnections();
             for (int i = 0; i < 4; i++)
             {
-                GetFirstPipe(Position + offsets[i])?.UpdateConnections();
+                PipeUtility.GetFirstSegment(Position + offsets[i], Map)?.UpdateConnections();
             }
         }
 
