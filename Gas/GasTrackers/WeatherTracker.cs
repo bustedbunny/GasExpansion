@@ -25,9 +25,8 @@ namespace GasExpansion.Gas.GasTrackers
         public Vector2 winddir = new();
         public GasMapComponent parent;
 
-        public WeatherTracker(GasMapComponent parent)
+        public WeatherTracker()
         {
-            this.parent = parent;
         }
         public void UpdateTracker()
         {

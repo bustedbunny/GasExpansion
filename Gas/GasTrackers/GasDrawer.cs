@@ -46,6 +46,7 @@ namespace GasExpansion.Gas.GasTrackers
         private ComputeBuffer argsBuffer;
         private ComputeBuffer matrixBuffer;
         private ComputeBuffer colorBuffer;
+        private ComputeBuffer signsBuffer;
 
         internal bool bufferIsDirty = true;
         private bool isInitialised = false;
@@ -62,7 +63,7 @@ namespace GasExpansion.Gas.GasTrackers
                 UpdateBuffer();
                 isInitialised = true;
             }
-            angle = (Find.TickManager.TicksGame % 720) / Mathf.PI * 180f / 1000f;
+            angle = Find.TickManager.TicksGame / Mathf.PI * 180f / 1000f;
             material.SetFloat("_Angle", angle);
             if (bufferIsDirty)
             {
@@ -70,7 +71,6 @@ namespace GasExpansion.Gas.GasTrackers
                 UpdateBuffer();
                 UpdateArgsBuffer();
                 bufferIsDirty = false;
-
             }
             Graphics.DrawMeshInstancedIndirect(MeshPool.plane10, 0, material, bounds, argsBuffer);
         }
@@ -109,6 +109,7 @@ namespace GasExpansion.Gas.GasTrackers
             material.SetFloat("_MaxAlpha", 512f);
             SetColorBuffer();
             SetMatrixBuffer();
+            SetRandSignBuffer();
         }
         private void SetColorBuffer()
         {
@@ -124,7 +125,7 @@ namespace GasExpansion.Gas.GasTrackers
         }
         private void SetMatrixBuffer()
         {
-            Vector3 size = new(2.5f, 0f, 2.5f);
+            Vector3 size = new(4.0f, 0f, 4.0f);
             Matrix4x4[] matrices = new Matrix4x4[map.cellIndices.NumGridCells];
             for (int i = 0; i < map.cellIndices.NumGridCells; i++)
             {
@@ -139,6 +140,19 @@ namespace GasExpansion.Gas.GasTrackers
             matrixBuffer = new ComputeBuffer(matrices.Length, sizeof(float) * 4 * 4);
             matrixBuffer.SetData(matrices);
             material.SetBuffer("_Matrices", matrixBuffer);
+        }
+        private void SetRandSignBuffer()
+        {
+            int[] signs = new int[map.cellIndices.NumGridCells];
+            for (int i = 0; i < signs.Length; i++)
+            {
+                Rand.PushState(i);
+                signs[i] = Rand.Sign;
+                Rand.PopState();
+            }
+            signsBuffer = new ComputeBuffer(signs.Length, sizeof(int));
+            signsBuffer.SetData(signs);
+            material.SetBuffer("_Signs", signsBuffer);
         }
         private void UpdateArgsBuffer()
         {
@@ -172,6 +186,7 @@ namespace GasExpansion.Gas.GasTrackers
             argsBuffer.Release();
             matrixBuffer.Release();
             colorBuffer.Release();
+            signsBuffer.Release();
         }
     }
 }

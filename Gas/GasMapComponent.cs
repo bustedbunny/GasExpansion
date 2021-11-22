@@ -27,26 +27,22 @@ namespace GasExpansion
                 parent = this
             };
             grid.PreLoadInit();
+            weather = new WeatherTracker();
         }
         public WeatherTracker weather;
         public GasGridTracker grid;
+        public PipeGrid pipeGrid;
+
         private GasDrawer drawer;
 
 
         private bool _throttled = false;
         private bool _rare = false;
         private bool _long = false;
-        public override async void MapComponentTick()
+        public override void MapComponentTick()
         {
             int tick = Find.TickManager.TicksGame;
-            await Task.Run(() =>
-            {
-                foreach (GasGrid gasGrid in grid.gasGrids)
-                {
-                    gasGrid.UpdateTransparency();
-                }
-            });
-
+     //       grid.UpdateTransparency();
             _throttled = (tick % 15 == 0);
             if (_throttled)
             {
@@ -63,6 +59,7 @@ namespace GasExpansion
             }
             foreach (GasGrid gasGrid in grid.gasGrids)
             {
+                gasGrid.UpdateTransparency();
                 if (_throttled)
                 {
                     gasGrid.TickThrottled();
@@ -88,10 +85,6 @@ namespace GasExpansion
         }
 
         /*
-        grid.gasGrids[i].Draw(currentViewRect, material, angle, minGas);
-        */
-
-
         public override void MapComponentOnGUI()
         {
             if (!Prefs.DevMode)
@@ -114,7 +107,7 @@ namespace GasExpansion
                 }
             }
         }
-
+        */
 
         public bool CanMoveTo(int ind)
         {
@@ -141,7 +134,7 @@ namespace GasExpansion
         }
         public override void FinalizeInit()
         {
-            weather = new WeatherTracker(this);
+            weather.parent = this;
             grid.FinalizeInit();
             grid.pathTracker.CachePathGrid();
             drawer = new GasDrawer(grid, map);

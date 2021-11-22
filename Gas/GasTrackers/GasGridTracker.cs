@@ -32,6 +32,17 @@ namespace GasExpansion.Gas.GasTrackers
             explosiveGrids = new List<GasGrid>();
         }
 
+        public async void UpdateTransparency()
+        {
+            await Task.Run(() =>
+            {
+                foreach (var gasGrid in gasGrids)
+                {
+                    gasGrid.UpdateTransparency();
+                }
+            });
+
+        }
         public void PreLoadInit()
         {
             pathTracker = new GasPathTracker
@@ -100,7 +111,7 @@ namespace GasExpansion.Gas.GasTrackers
         private void CountGases()
         {
             totalGasCount = 0;
-            foreach(GasGrid gasGrid in gasGrids)
+            foreach (GasGrid gasGrid in gasGrids)
             {
                 totalGasCount += gasGrid.gases.Count;
             }
