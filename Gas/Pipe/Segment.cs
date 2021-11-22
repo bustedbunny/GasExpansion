@@ -69,7 +69,6 @@ namespace GasExpansion
             StringBuilder stringBuilder = new();
             stringBuilder.Append(base.GetInspectString());
             stringBuilder.Append(Rotation.ToString());
-            stringBuilder.Append(currentPressure.ToString());
             if (zeroSegment != null)
             {
                 stringBuilder.Append("\nZero segment: " + zeroSegment?.thingIDNumber);
