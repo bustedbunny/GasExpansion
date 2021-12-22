@@ -182,11 +182,35 @@ namespace GasExpansion.Gas.GasTrackers
 
         public void ReleaseAllBuffers()
         {
-            meshBuffer.Release();
-            argsBuffer.Release();
-            matrixBuffer.Release();
-            colorBuffer.Release();
-            signsBuffer.Release();
+            if (meshBuffer != null)
+            {
+                meshBuffer.Release();
+                meshBuffer.Dispose();
+            }
+            if (argsBuffer != null)
+            {
+                argsBuffer.Release();
+                argsBuffer.Dispose();
+            }
+            if (matrixBuffer != null)
+            {
+                matrixBuffer.Release();
+                matrixBuffer.Dispose();
+            }
+            if (colorBuffer != null)
+            {
+                colorBuffer.Release();
+                colorBuffer.Dispose();
+            }
+            if (signsBuffer != null)
+            {
+                signsBuffer.Release();
+                signsBuffer.Dispose();
+            }
+        }
+        ~GasDrawer()
+        {
+            ReleaseAllBuffers();
         }
     }
 }
