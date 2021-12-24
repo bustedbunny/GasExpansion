@@ -1,4 +1,5 @@
-﻿using RimWorld;
+﻿using GasExpansion.Gas.Pipe.Base;
+using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
