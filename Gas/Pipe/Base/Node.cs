@@ -40,11 +40,13 @@ namespace GasExpansion.Gas.Pipe.Base
             }
             if (ConnectorCells == null)
             {
+                Map mapHeld = Map ?? MapHeld;
+                mapHeld?.GetComponent<GasMapComponent>().pipeTracker.DeregisterAllDirtyRelatedLinks(this);
                 return;
             }
             for (int i = 0; i < ConnectorCells.Length; i++)
             {
-                PipeBase pipe = PipeUtility.GetFirstPipe(ConnectorCells[i], Map);
+                PipeBase pipe = PipeUtility.GetFirstPipe<PipeBase>(ConnectorCells[i], Map);
                 if (CanConnect(pipe))
                 {
                     if (pipe is Segment segment)
@@ -60,8 +62,19 @@ namespace GasExpansion.Gas.Pipe.Base
                         ConnectedNodes[i] = node;
                         if (updateAdj) node.UpdateConnections(false);
                     }
+                    if (ConnectedNodes[i] != null)
+                    {
+                        Map mapHeld = Map ?? MapHeld;
+                        Link link = mapHeld?.GetComponent<GasMapComponent>().pipeTracker.TryRegisterLink(this, ConnectedNodes[i]);
+                        if (link != null)
+                        {
+
+                        }
+                    }
                 }
             }
+            Map map = Map ?? MapHeld;
+            map?.GetComponent<GasMapComponent>().pipeTracker.DeregisterAllDirtyRelatedLinks(this);
         }
 
         public override IEnumerable<Gizmo> GetGizmos()
@@ -78,6 +91,14 @@ namespace GasExpansion.Gas.Pipe.Base
                     action = () =>
                     {
                         this.UpdateConnections(true);
+                    }
+                };
+                yield return new Command_Action
+                {
+                    defaultLabel = "LogLinks",
+                    action = () =>
+                    {
+                        Map.GetComponent<GasMapComponent>().pipeTracker.LogLinks();
                     }
                 };
             }

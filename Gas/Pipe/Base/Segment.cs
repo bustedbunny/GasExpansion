@@ -65,12 +65,12 @@ namespace GasExpansion.Gas.Pipe.Base
             {
                 return;
             }
-            PipeBase pipe = PipeUtility.GetFirstPipe(ConnectorCells[0], Map);
+            PipeBase pipe = PipeUtility.GetFirstPipe<PipeBase>(ConnectorCells[0], Map);
             if (CanConnect(pipe))
             {
                 aSegment = pipe;
             }
-            pipe = PipeUtility.GetFirstPipe(ConnectorCells[1], Map);
+            pipe = PipeUtility.GetFirstPipe<PipeBase>(ConnectorCells[1], Map);
             if (CanConnect(pipe))
             {
                 bSegment = pipe;

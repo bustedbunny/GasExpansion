@@ -10,7 +10,7 @@ namespace GasExpansion.Gas.Pipe.Base
 {
     public static class PipeUtility
     {
-        public static Segment GetFirstSegment(IntVec3 cell, Map map)
+        public static T GetFirstPipe<T>(IntVec3 cell, Map map) where T : class
         {
             if (cell == null || map == null)
             {
@@ -18,39 +18,9 @@ namespace GasExpansion.Gas.Pipe.Base
             }
             foreach (Thing thing in map.thingGrid.ThingsAt(cell))
             {
-                if (thing is Segment)
+                if (thing is T)
                 {
-                    return thing as Segment;
-                }
-            }
-            return null;
-        }
-        public static PipeBase GetFirstPipe(IntVec3 cell, Map map)
-        {
-            if (cell == null || map == null)
-            {
-                return null;
-            }
-            foreach (Thing thing in map.thingGrid.ThingsAt(cell))
-            {
-                if (thing is PipeBase)
-                {
-                    return thing as PipeBase;
-                }
-            }
-            return null;
-        }
-        public static Node GetFirstNode(IntVec3 cell, Map map)
-        {
-            if (cell == null || map == null)
-            {
-                return null;
-            }
-            foreach (Thing thing in map.thingGrid.ThingsAt(cell))
-            {
-                if (thing is Node)
-                {
-                    return thing as Node;
+                    return thing as T;
                 }
             }
             return null;
@@ -119,13 +89,13 @@ namespace GasExpansion.Gas.Pipe.Base
 
         public static string NumToString(int i)
         {
-            switch (i)
+            return i switch
             {
-                case 0: return "First";
-                case 1: return "Second";
-                case 2: return "Third";
-                default: return "Fourth";
-            }
+                0 => "First",
+                1 => "Second",
+                2 => "Third",
+                _ => "Fourth",
+            };
         }
 
         public static readonly IntVec3[] Offsets =

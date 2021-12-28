@@ -55,6 +55,7 @@
     <Compile Include="Gas\GasProperties\GasProperties_DealDamage.cs" />
     <Compile Include="Gas\GasTrackers\GasDrawer.cs" />
     <Compile Include="Gas\GasTrackers\GasGridTracker.cs" />
+    <Compile Include="Gas\GasTrackers\PipeTracker.cs" />
     <Compile Include="Gas\GasTrackers\WeatherTracker.cs" />
     <Compile Include="Gas\Pipe\Link\Link.cs" />
     <Compile Include="Gas\Pipe\Base\Node.cs" />
